@@ -3,12 +3,25 @@
 [![日本語: Click to View](https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-Click%20to%20View-64748b)](./README.md)
 ![English: Current](https://img.shields.io/badge/English-Current-2ea44f)
 
+![Local First](https://img.shields.io/badge/local--first-yes-2ea44f)
+![Single File](https://img.shields.io/badge/single--file-HTML-f97316)
+![No Build](https://img.shields.io/badge/build-none-64748b)
+![Markdown](https://img.shields.io/badge/Markdown-supported-0f766e)
+![Mermaid](https://img.shields.io/badge/Mermaid-supported-2563eb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 LeafNote is a local-first notebook for growing your thoughts on your own machine instead of sending them to the cloud.
 
 Quick notes, design drafts, research logs, tasks, code, tables, images, and Mermaid diagrams.
 It gathers scattered working fragments into one quiet place and helps shape them into something you can revisit later.
 
 Rather than flashy sync features or account integrations, LeafNote focuses on being fast to open, keeping your notes close at hand, and letting you export them as Markdown.
+
+## Choose your UI language
+
+LeafNote uses English as the default UI language, and the settings modal lets you choose English or 日本語.
+Your choice is saved in IndexedDB, so the same language is restored the next time you open it.
+The untouched welcome note also follows the selected UI language and switches between English and Japanese.
 
 ## Focus on writing
 

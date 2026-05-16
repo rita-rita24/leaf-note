@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" data-cl-accent="wakakusa">
+<html lang="en" data-cl-accent="wakakusa">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -583,7 +583,7 @@
   }
   .toggle-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
   }
 
   /* Container blocks */
@@ -629,7 +629,7 @@
     vertical-align: 0;
   }
   .block-drag { cursor: grab; }
-  .block-drag .material-symbols-outlined { transform: translateX(1px); }
+  .block-drag .material-symbols-outlined { transform: translateX(-2px); }
   .block-drag:active { cursor: grabbing; }
 
   .block-prefix {
@@ -642,7 +642,7 @@
 
   .block-content {
     flex: 1; min-width: 0;
-    min-height: 1.8em;
+    min-height: 1.5em;
     padding: 0.15em 2px; outline: none;
     word-wrap: break-word; overflow-wrap: break-word;
     line-height: 1.5;
@@ -654,41 +654,41 @@
 
   .block[data-type="h1"] .block-content {
     font-size: 30px; font-weight: 700; line-height: 1.3;
-    min-height: 1.5em; padding-block: 0.1em; letter-spacing: 0;
+    min-height: 1.3em; padding-block: 0.1em; letter-spacing: 0;
   }
   .block[data-type="h2"] .block-content {
     font-size: 24px; font-weight: 700; line-height: 1.3;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.3em; padding-block: 0.1em;
   }
   .block[data-type="h3"] .block-content {
     font-size: 20px; font-weight: 600; line-height: 1.3;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.3em; padding-block: 0.1em;
   }
 
   /* Toggle heading content — same large text, but also applied to toggle-header */
   .block[data-type="toggle_h1"] > .toggle-header > .block-content {
     font-size: 30px; font-weight: 700; line-height: 1.3;
-    min-height: 1.5em; padding-block: 0.1em; letter-spacing: 0;
+    min-height: 1.3em; padding-block: 0.1em; letter-spacing: 0;
   }
   .block[data-type="toggle_h2"] > .toggle-header > .block-content {
     font-size: 24px; font-weight: 700; line-height: 1.3;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.3em; padding-block: 0.1em;
   }
   .block[data-type="toggle_h3"] > .toggle-header > .block-content {
     font-size: 20px; font-weight: 600; line-height: 1.3;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.3em; padding-block: 0.1em;
   }
   .block[data-type="h4"] .block-content {
     font-size: 18px; font-weight: 600; line-height: 1.35;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.35em; padding-block: 0.1em;
   }
   .block[data-type="h5"] .block-content {
     font-size: 16px; font-weight: 650; line-height: 1.35;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.35em; padding-block: 0.1em;
   }
   .block[data-type="h6"] .block-content {
     font-size: 14px; font-weight: 700; line-height: 1.35;
-    min-height: 1.5em; padding-block: 0.1em;
+    min-height: 1.35em; padding-block: 0.1em;
     color: var(--text-secondary);
   }
 
@@ -735,7 +735,9 @@
     display: block;
     margin-left: 28px;
     padding-left: 10px;
-    border-left: 1px solid var(--border);
+    padding-block: 2px;
+    border-radius: var(--ln-radius-md);
+    background: var(--ln-primary-faint);
   }
 
   /* Toggle prefix (chevron) */
@@ -782,18 +784,18 @@
   .toggle-empty-hint:hover { background: var(--bg-hover); }
 
   .block[data-type="quote"] {
-    padding: 8px 12px;
-    border-inline-start: 3px solid var(--ln-block-border-strong);
+    padding: 10px 14px;
     border-radius: var(--ln-radius-md);
-    background: var(--ln-header-bg);
+    background: color-mix(in oklch, var(--ln-header-bg) 82%, var(--ln-primary-faint));
     margin: 6px 0;
     color: var(--text-primary);
   }
   .block[data-type="quote"] .block-content {
     font-size: 20px;
-    line-height: 1.4;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    line-height: 1.45;
+    min-height: 1.45em;
+    padding-block: 0;
+    --ln-placeholder-inset-block: 0;
   }
 
   /* Code block — compact editor layout
@@ -1170,9 +1172,8 @@
   }
   .html-preview {
     padding: 10px 12px;
-    border-top: 1px solid var(--border);
     color: var(--text-secondary);
-    background: var(--ln-bg);
+    background: color-mix(in oklch, var(--ln-bg) 88%, var(--ln-header-bg));
   }
   .mermaid-preview {
     margin: 0 12px 12px;
@@ -1285,7 +1286,6 @@
     --governance-accent: var(--accent);
     --governance-bg: var(--ln-header-bg);
     border: 1px solid var(--border);
-    border-left: 4px solid var(--governance-accent);
     border-radius: var(--ln-radius-md);
     background: var(--governance-bg);
     overflow: hidden;
@@ -1377,7 +1377,6 @@
     --spec-accent: oklch(0.56 0.14 228);
     --spec-bg: var(--ln-header-bg);
     border: 1px solid var(--border);
-    border-left: 4px solid var(--spec-accent);
     border-radius: var(--ln-radius-md);
     background: var(--spec-bg);
     overflow: hidden;
@@ -2353,9 +2352,9 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="document">
-        <div class="document-name" id="document-name" contenteditable="true" spellcheck="false" data-placeholder="ドキュメント名">LeafNote</div>
+        <div class="document-name" id="document-name" contenteditable="true" spellcheck="false" data-placeholder="Document name">LeafNote</div>
       </div>
-      <button class="sidebar-toggle" id="sidebar-toggle" title="サイドバーを閉じる" aria-label="サイドバーを閉じる">
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Close sidebar" aria-label="Close sidebar">
         <span class="material-symbols-outlined" aria-hidden="true">menu</span>
       </button>
     </div>
@@ -2363,32 +2362,32 @@
     <div class="sidebar-section">
       <button class="sidebar-nav-item" id="search-btn" type="button">
         <span class="material-symbols-outlined" aria-hidden="true">search</span>
-        検索
+        <span id="search-label">Search</span>
       </button>
       <button class="sidebar-nav-item" id="theme-toggle" type="button">
         <span class="material-symbols-outlined" id="theme-icon" aria-hidden="true">dark_mode</span>
-        <span id="theme-label">ダークモード</span>
+        <span id="theme-label">Dark mode</span>
       </button>
       <button class="sidebar-nav-item" id="settings-btn" type="button">
         <span class="material-symbols-outlined" aria-hidden="true">settings</span>
-        設定
+        <span id="settings-label">Settings</span>
       </button>
       <button class="sidebar-nav-item" id="trash-btn" type="button">
         <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-        ゴミ箱
+        <span id="trash-label">Trash</span>
       </button>
       <button class="sidebar-nav-item" id="export-btn" type="button">
         <span class="material-symbols-outlined" aria-hidden="true">save</span>
-        保存
+        <span id="export-label">Save</span>
       </button>
     </div>
 
     <div class="sidebar-group-header">
       <div class="sidebar-group-header-label">
         <span class="material-symbols-outlined" aria-hidden="true">view_agenda</span>
-        ノート棚
+        <span id="shelf-label">Note shelf</span>
       </div>
-      <button class="sidebar-group-add" id="private-add-btn" title="新しいノート" aria-label="新しいノート">
+      <button class="sidebar-group-add" id="private-add-btn" title="New note" aria-label="New note">
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
       </button>
     </div>
@@ -2397,14 +2396,14 @@
     <div class="sidebar-bottom">
       <button class="sidebar-nav-item" id="new-page-btn" type="button">
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
-        新しいノート
+        <span id="new-page-label">New note</span>
       </button>
     </div>
-    <div class="sidebar-resizer" id="sidebar-resizer" title="ドラッグでサイドバーの幅を調整"></div>
+    <div class="sidebar-resizer" id="sidebar-resizer" title="Drag to resize sidebar"></div>
   </aside>
 
   <main class="main">
-    <button class="sidebar-toggle sidebar-open-floating" id="sidebar-open" style="display:none" aria-label="サイドバーを開く">
+    <button class="sidebar-toggle sidebar-open-floating" id="sidebar-open" style="display:none" aria-label="Open sidebar">
       <span class="material-symbols-outlined" aria-hidden="true">menu</span>
     </button>
 
@@ -2412,16 +2411,16 @@
       <div class="page-container" id="page-container">
         <div class="note-heading">
           <div class="note-icon-wrapper">
-            <button class="note-icon" id="note-icon" type="button" aria-label="ノートアイコンを変更">📄</button>
+            <button class="note-icon" id="note-icon" type="button" aria-label="Change note icon">📄</button>
           </div>
           <div class="page-title-wrapper">
-            <h1 class="page-title" id="page-title" contenteditable="true" data-placeholder="無題"></h1>
+            <h1 class="page-title" id="page-title" contenteditable="true" data-placeholder="Untitled"></h1>
           </div>
         </div>
         <div class="page-meta-buttons" id="page-meta">
           <button class="meta-btn" id="add-icon-btn" type="button">
             <span class="material-symbols-outlined" aria-hidden="true">add_reaction</span>
-            アイコン変更
+            <span id="add-icon-label">Change icon</span>
           </button>
         </div>
         <div class="blocks" id="blocks"></div>
@@ -2437,17 +2436,17 @@
 <div class="save-status" id="save-status" role="status" aria-live="polite" hidden></div>
 
 <div class="inline-toolbar" id="inline-toolbar" hidden>
-  <button class="inline-btn" data-cmd="bold" title="太字 (Ctrl+B)" aria-label="太字"><b>B</b></button>
-  <button class="inline-btn" data-cmd="italic" title="斜体 (Ctrl+I)" aria-label="斜体"><i>I</i></button>
-  <button class="inline-btn" data-cmd="underline" title="下線 (Ctrl+U)" aria-label="下線"><u>U</u></button>
-  <button class="inline-btn" data-cmd="strikeThrough" title="取り消し線" aria-label="取り消し線"><s>S</s></button>
+  <button class="inline-btn" data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+  <button class="inline-btn" data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
+  <button class="inline-btn" data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+  <button class="inline-btn" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
 </div>
 
 <div class="overlay" id="search-overlay" hidden aria-hidden="true">
-  <div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-label="ノート検索">
+  <div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-label="Note search">
     <div class="search-header">
       <span class="material-symbols-outlined" aria-hidden="true">search</span>
-      <input type="search" id="search-input" class="search-input" placeholder="ノートを検索 / 入力して新しいノートを作成">
+      <input type="search" id="search-input" class="search-input" placeholder="Search notes / type to create a new note">
     </div>
     <div class="search-results" id="search-results"></div>
   </div>
@@ -2461,12 +2460,12 @@
   <div class="theme-modal" id="theme-modal" role="dialog" aria-modal="true" aria-labelledby="theme-title">
     <div class="theme-header">
       <span class="material-symbols-outlined theme-icon" aria-hidden="true">palette</span>
-      <div class="theme-title" id="theme-title">テーマをカスタマイズ</div>
+      <div class="theme-title" id="theme-title">Customize theme</div>
     </div>
     <div class="theme-body" id="theme-body"></div>
     <div class="theme-footer">
-      <button class="theme-reset-btn" id="theme-reset-btn">リセット</button>
-      <button class="theme-done-btn" id="theme-done-btn">完了</button>
+      <button class="theme-reset-btn" id="theme-reset-btn">Reset</button>
+      <button class="theme-done-btn" id="theme-done-btn">Done</button>
     </div>
   </div>
 </div>
@@ -2475,17 +2474,17 @@
   <div class="trash-modal" id="trash-modal" role="dialog" aria-modal="true" aria-labelledby="trash-title">
     <div class="trash-header">
       <span class="material-symbols-outlined trash-icon" aria-hidden="true">delete</span>
-      <div class="trash-title" id="trash-title">ゴミ箱</div>
-      <label class="trash-retention" title="期間経過後に自動で完全削除">
-        自動削除
+      <div class="trash-title" id="trash-title">Trash</div>
+      <label class="trash-retention" id="trash-retention-label" title="Permanently delete after this period">
+        Auto-delete
         <select id="trash-retention-select">
-          <option value="0">オフ</option>
-          <option value="7">7日</option>
-          <option value="30">30日</option>
-          <option value="90">90日</option>
+          <option value="0">Off</option>
+          <option value="7">7 days</option>
+          <option value="30">30 days</option>
+          <option value="90">90 days</option>
         </select>
       </label>
-      <button class="trash-empty-btn" id="trash-empty-btn">すべて完全削除</button>
+      <button class="trash-empty-btn" id="trash-empty-btn">Delete all forever</button>
     </div>
     <div class="trash-body" id="trash-body"></div>
   </div>
@@ -2495,7 +2494,7 @@
   <div class="shortcuts-modal" id="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
     <div class="shortcuts-header">
       <span class="material-symbols-outlined" aria-hidden="true">keyboard</span>
-      <div class="shortcuts-title" id="shortcuts-title">キーボードショートカット</div>
+      <div class="shortcuts-title" id="shortcuts-title">Keyboard shortcuts</div>
     </div>
     <div class="shortcuts-body" id="shortcuts-body"></div>
   </div>
@@ -2518,6 +2517,8 @@ const escapeHTML = (s) => { const d = document.createElement('div'); d.textConte
 const decodeHTMLText = (s) => { const d = document.createElement('textarea'); d.innerHTML = s; return d.value; };
 const DEFAULT_DOCUMENT_NAME = 'LeafNote Markdown Native';
 const DEFAULT_PAGE_MATERIAL_ICON = 'sticky_note_2';
+const DEFAULT_UI_LANGUAGE = 'en';
+const UI_LANGUAGES = new Set(['en', 'ja']);
 const PLAIN_TEXT_SANITIZER_VERSION = 1;
 const SPEC_BLOCK_TYPES = new Set(['api_spec', 'db_table', 'screen_spec', 'test_case']);
 const SPEC_PLAIN_TEXT_FIELDS = [
@@ -2565,6 +2566,766 @@ const MERMAID_DIAGRAM_DECLARATIONS = [
 const MERMAID_DIAGRAM_KIND_LABELS = new Map(MERMAID_DIAGRAM_DECLARATIONS.map((item) => [item.kind, item.label]));
 const MERMAID_PERMISSIVE_BARE_KINDS = new Set(['mindmap', 'timeline', 'zenuml', 'treeview', 'treemap', 'ishikawa', 'wardley', 'eventmodeling']);
 let _blockGutterPositionFrame = null;
+
+const I18N = {
+  en: {
+    appTitle: 'LeafNote Markdown Native',
+    common: {
+      ok: 'OK',
+      cancel: 'Cancel',
+      confirm: 'Confirm',
+      notice: 'Notice',
+      input: 'Input',
+      save: 'Save',
+      reset: 'Reset',
+      done: 'Done',
+      delete: 'Delete',
+      untitled: 'Untitled',
+      closeSidebar: 'Close sidebar',
+      openSidebar: 'Open sidebar',
+      documentName: 'Document name',
+      newNote: 'New note',
+      search: 'Search',
+      settings: 'Settings',
+      trash: 'Trash',
+      noteShelf: 'Note shelf',
+      changeNoteIcon: 'Change note icon',
+      changeIcon: 'Change icon',
+      resizeSidebar: 'Drag to resize sidebar',
+      openNote: 'Open {title}',
+      childNotes: '{count} child notes'
+    },
+    inlineToolbar: {
+      bold: 'Bold',
+      boldTitle: 'Bold (Ctrl+B)',
+      italic: 'Italic',
+      italicTitle: 'Italic (Ctrl+I)',
+      underline: 'Underline',
+      underlineTitle: 'Underline (Ctrl+U)',
+      strike: 'Strikethrough'
+    },
+    dialog: {
+      saveTitle: 'Save',
+      saveMessage: 'Save the current app as one HTML file.',
+      saveNameNote: 'This name is used for the document name in the top-left and the saved file name.',
+      saveFailed: 'Export failed: {message}',
+      imageConvertFailed: 'Image conversion failed',
+      imageTypeInvalid: 'Not an image/* response',
+      repairMessage: 'Saved data had inconsistencies, so it was repaired into a safe shape before startup.',
+      repairTitle: 'Data repaired',
+      largeFileTitle: 'Large file',
+      largeFileMessage: 'This image is over 8 MB. It will make saved data larger. Continue?',
+      continue: 'Continue',
+      fileReadFailed: 'Failed to read the file',
+      externalImageFailedTitle: 'External image import failed',
+      externalImageFailedMessage: '{count} external images could not be embedded.\nIf you save now, shared or offline copies may have missing images.',
+      saveAnyway: 'Save anyway',
+      resetThemeTitle: 'Reset theme',
+      resetThemeMessage: 'Reset the theme to defaults?'
+    },
+    saveStatus: {
+      idbFallback: 'IndexedDB save failed, so the app saved a fallback copy to localStorage.',
+      failed: 'Could not save. Check browser storage space or private browsing settings.',
+      unloadFailed: 'Failed to save a fallback copy before closing. Export the file to save your work.'
+    },
+    theme: {
+      title: 'Customize theme',
+      language: 'Language',
+      accent: 'Theme color ({mode} mode)',
+      customAccent: 'Custom theme color',
+      light: 'light',
+      dark: 'dark',
+      lightMode: 'Light mode',
+      darkMode: 'Dark mode',
+      noteWidth: 'Note width',
+      font: 'Font',
+      widths: {
+        narrow: 'Narrow',
+        normal: 'Normal',
+        wide: 'Wide',
+        full: 'Full'
+      },
+      fonts: {
+        clarity: 'Noto Sans JP',
+        rounded: 'Meiryo',
+        editorial: 'Yu Mincho',
+        code: 'Code Mono'
+      },
+      chooseAccent: 'Select theme color {color}'
+    },
+    search: {
+      aria: 'Note search',
+      placeholder: 'Search notes / type to create a new note',
+      recent: 'Recent notes',
+      notesCount: 'Notes ({count})',
+      noResults: 'No results',
+      createHint: 'Press Enter to create "{query}" as a new note',
+      createTitle: 'Create "{query}" as a new note',
+      createAria: 'Create {query} as a new note'
+    },
+    trash: {
+      title: 'Trash',
+      retentionTitle: 'Permanently delete after this period',
+      retention: 'Auto-delete',
+      off: 'Off',
+      days: '{count} days',
+      emptyAll: 'Delete all forever',
+      empty: 'Trash is empty',
+      lastAutoPurge: 'Last auto-delete: {count} items (retention {days} days / {time})',
+      justNow: 'just now',
+      minutesAgo: '{count} min ago',
+      hoursAgo: '{count} hr ago',
+      daysAgo: '{count} days ago',
+      deletedAt: 'Deleted {time}',
+      includesChildren: 'includes {count} child notes',
+      remaining: 'deleted in {count} days',
+      restore: 'Restore',
+      purge: 'Delete forever',
+      purgeTitle: 'Delete forever',
+      purgeMessage: 'Delete "{title}" forever? This cannot be undone.',
+      emptyTitle: 'Empty trash',
+      emptyMessage: 'Delete all {count} notes in trash forever? This cannot be undone.',
+      autoTitle: 'Trash auto-delete',
+      autoOk: 'OK',
+      autoStartup: 'startup',
+      autoOpen: 'opening trash',
+      autoMessage: 'Auto-deleted {count} items during {where} (retention: {days} days).'
+    },
+    pageMenu: {
+      rename: 'Rename',
+      addChild: 'Add child note',
+      duplicate: 'Duplicate',
+      duplicateSuffix: ' (Copy)',
+      exportMarkdown: 'Export as Markdown',
+      moveToTrash: 'Move to trash',
+      moveToTrashTitle: 'Move to trash',
+      moveToTrashMessage: 'Move this note to trash?',
+      move: 'Move',
+      noteMenu: 'Note menu',
+      expandChildren: 'Expand child notes',
+      collapseChildren: 'Collapse child notes',
+      emptyShelf: 'No notes'
+    },
+    blockTypes: {
+      text: { name: 'Text', desc: 'Plain text' },
+      h1: { name: 'Heading 1', desc: 'Large heading' },
+      h2: { name: 'Heading 2', desc: 'Medium heading' },
+      h3: { name: 'Heading 3', desc: 'Small heading' },
+      h4: { name: 'Heading 4', desc: 'Detail heading' },
+      h5: { name: 'Heading 5', desc: 'Compatibility display' },
+      h6: { name: 'Heading 6', desc: 'Compatibility display' },
+      toc: { name: 'Table of contents', desc: 'Generated from page headings' },
+      bullet: { name: 'Bulleted list', desc: 'Bullet list item' },
+      numbered: { name: 'Numbered list', desc: 'Numbered list item' },
+      todo: { name: 'To-do list', desc: 'List with checkboxes' },
+      toggle: { name: 'Toggle list', desc: 'Expandable and collapsible list' },
+      toggle_h1: { name: 'Toggle heading 1', desc: 'Collapsible heading 1' },
+      toggle_h2: { name: 'Toggle heading 2', desc: 'Collapsible heading 2' },
+      toggle_h3: { name: 'Toggle heading 3', desc: 'Collapsible heading 3' },
+      quote: { name: 'Quote', desc: 'Quote block' },
+      code: { name: 'Code', desc: 'Code snippet' },
+      divider: { name: 'Divider', desc: 'Horizontal divider' },
+      callout: { name: 'Callout', desc: 'Highlighted information box' },
+      requirement: { name: 'Requirement', desc: 'Compatibility display' },
+      open_question: { name: 'Open Question', desc: 'Compatibility display' },
+      api_spec: { name: 'API Spec', desc: 'Compatibility display' },
+      db_table: { name: 'DB Table', desc: 'Compatibility display' },
+      screen_spec: { name: 'Screen Spec', desc: 'Compatibility display' },
+      test_case: { name: 'Test Case', desc: 'Compatibility display' },
+      table: { name: 'Table', desc: 'Simple table' },
+      image: { name: 'Image', desc: 'Image from URL or file' },
+      mermaid: { name: 'Mermaid', desc: 'Preview a Mermaid diagram' },
+      html: { name: 'HTML', desc: 'Compatibility display' }
+    },
+    block: {
+      currentType: 'Current block type',
+      addBelowTitle: 'Add below (choose type)',
+      addBelow: 'Add below',
+      menuTitle: 'Drag or click for menu',
+      menu: 'Block menu',
+      duplicate: 'Duplicate',
+      delete: 'Delete',
+      input: 'Type',
+      placeholders: {
+        text: 'Type or use "/" to add headings, lists, and more',
+        h1: 'Heading 1',
+        h2: 'Heading 2',
+        h3: 'Heading 3',
+        h4: 'Heading 4',
+        toggle_h1: 'Toggle heading 1',
+        toggle_h2: 'Toggle heading 2',
+        toggle_h3: 'Toggle heading 3',
+        quote: 'Write a quote',
+        bullet: 'List item',
+        numbered: 'List item',
+        todo: 'To-do',
+        toggle: 'Toggle',
+        callout: 'Write a callout',
+        decision: 'Write a decision',
+        requirement: 'Write a requirement',
+        open_question: 'Write an open question',
+        risk: 'Write a risk'
+      },
+      codeLanguage: 'Select language',
+      codeWrapOn: 'Wrap lines: ON',
+      codeWrapOff: 'Wrap lines: OFF',
+      codeWrapTitle: 'Toggle wrapping',
+      copy: 'Copy',
+      copied: 'Copied',
+      codePlaceholder: 'Enter code',
+      tableAddRow: '+ Row',
+      tableAddColumn: '+ Column',
+      tableRemoveRow: '- Row',
+      tableRemoveColumn: '- Column',
+      tableHeaderRowOn: 'Header row: ON',
+      tableHeaderRowOff: 'Header row: OFF',
+      tableHeaderColumnOn: 'Header column: ON',
+      tableHeaderColumnOff: 'Header column: OFF',
+      imageLoadFailed: 'Failed to load image',
+      imageReplace: 'Change',
+      imageCaption: 'Caption (optional)',
+      selectImage: 'Choose image file',
+      addImage: 'Add image',
+      imageDropHint: 'Click to choose, or drag and drop here',
+      chooseFile: 'Choose file',
+      enterUrl: 'Enter URL',
+      imageUrlTitle: 'Image URL',
+      imageUrlPrompt: 'Enter the image URL',
+      add: 'Add',
+      untitledHeading: 'Untitled heading',
+      toc: 'Table of contents',
+      tocEmpty: 'No headings',
+      tocAria: 'Page table of contents',
+      htmlPreview: 'HTML preview',
+      mathInput: 'Enter math',
+      mermaidInput: 'Enter Mermaid',
+      footnote: 'Footnote',
+      footnoteLabel: 'Footnote label',
+      footnoteBody: 'Footnote body',
+      linkReference: 'Link reference',
+      label: 'Label',
+      title: 'Title',
+      term: 'Term',
+      definition: 'Definition',
+      columns: 'Columns',
+      addColumn: '+ Column',
+      remove: 'Remove',
+      toggleCollapse: 'Collapse toggle',
+      toggleExpand: 'Expand toggle',
+      emptyToggle: 'Empty toggle. Click to add',
+      changeCalloutIconTitle: 'Click to change marker',
+      changeCalloutIcon: 'Change callout icon'
+    },
+    iconPicker: {
+      emoji: 'Emoji',
+      icon: 'Icon',
+      emojiSearch: 'Search emoji categories...',
+      iconSearch: 'Search icon names or categories...',
+      random: 'Random',
+      remove: 'Remove',
+      removeTitle: 'Remove icon',
+      choose: 'Choose {name}',
+      categories: {
+        notes: 'Notes',
+        status: 'Status',
+        work: 'Work',
+        life: 'Life',
+        operations: 'Basic actions',
+        business: 'Business',
+        media: 'Media',
+        development: 'Development'
+      }
+    },
+    shortcuts: {
+      title: 'Keyboard shortcuts',
+      run: 'Click to run',
+      groups: {
+        general: 'General',
+        inline: 'Inline formatting',
+        insert: 'Block insertion (Markdown shortcuts)',
+        edit: 'Block editing',
+        selection: 'When multiple blocks are selected',
+        quick: 'Quick actions (click to run)'
+      },
+      items: {
+        openSearch: 'Open note search',
+        showShortcuts: 'Show this shortcut list',
+        undo: 'Undo',
+        redo: 'Redo',
+        closeModal: 'Close modal / menu',
+        bold: 'Bold',
+        italic: 'Italic',
+        underline: 'Underline',
+        heading1: 'Heading 1',
+        heading2: 'Heading 2',
+        heading3: 'Heading 3',
+        bullet: 'Bulleted list (* / + also works)',
+        numbered: 'Numbered list',
+        todo: 'To-do',
+        toggle: 'Toggle',
+        quote: 'Quote',
+        code: 'Code block',
+        divider: 'Divider',
+        blockMenu: 'Block menu (slash command)',
+        nextBlock: 'Create next block',
+        lineBreak: 'Line break inside block',
+        backspace: 'Delete empty block / merge into previous block',
+        prevBlock: 'Move to previous block (at line start)',
+        nextBlockMove: 'Move to next block (at line end)',
+        selectAllBlocks: 'Select all blocks (multi-select mode)',
+        copyBlocks: 'Copy selected blocks',
+        cutBlocks: 'Cut selected blocks',
+        deleteBlocks: 'Delete selected blocks',
+        clearSelection: 'Clear selection',
+        newNote: 'Create new note',
+        customizeTheme: 'Customize theme',
+        toggleDarkMode: 'Toggle dark mode',
+        toggleSidebar: 'Open/close sidebar',
+        openTrash: 'Open trash',
+        importMarkdown: 'Import Markdown file',
+        exportMarkdown: 'Export current note as Markdown',
+        save: 'Save'
+      }
+    },
+    initial: {
+      title: 'Welcome to LeafNote',
+      intro: '<b>LeafNote</b> is a local-first notebook that runs entirely in your browser. Organize notes, tasks, references, and work logs in this single HTML file.',
+      firstSteps: 'Start here',
+      stepShelf: 'Create notes in the note shelf on the left and nest them as child notes.',
+      stepIcon: 'Use the icon next to a note name to choose an emoji or Material icon that fits the purpose.',
+      stepSlash: 'Type <b>/</b> on an empty line to add blocks such as headings, to-dos, tables, and images.',
+      stepSearch: 'Use <b>Cmd/Ctrl + K</b> to search notes. Names that do not exist can become new notes immediately.',
+      autosave: 'Content is saved automatically in this browser. Use "Save" in the sidebar to export an HTML file with the current state embedded.',
+      checklist: 'Getting started checklist',
+      todoHome: 'Rewrite this note into your own home page',
+      todoCategories: 'Create notes for common categories such as work, study, and life',
+      todoIcons: 'Set icons on important notes so they are easier to find in the sidebar'
+    }
+  },
+  ja: {
+    appTitle: 'LeafNote Markdown Native',
+    common: {
+      ok: 'OK',
+      cancel: 'キャンセル',
+      confirm: '確認',
+      notice: 'お知らせ',
+      input: '入力',
+      save: '保存',
+      reset: 'リセット',
+      done: '完了',
+      delete: '削除',
+      untitled: '無題',
+      closeSidebar: 'サイドバーを閉じる',
+      openSidebar: 'サイドバーを開く',
+      documentName: 'ドキュメント名',
+      newNote: '新しいノート',
+      search: '検索',
+      settings: '設定',
+      trash: 'ゴミ箱',
+      noteShelf: 'ノート棚',
+      changeNoteIcon: 'ノートアイコンを変更',
+      changeIcon: 'アイコン変更',
+      resizeSidebar: 'ドラッグでサイドバーの幅を調整',
+      openNote: '{title}を開く',
+      childNotes: '{count}個の子ノート'
+    },
+    inlineToolbar: {
+      bold: '太字',
+      boldTitle: '太字 (Ctrl+B)',
+      italic: '斜体',
+      italicTitle: '斜体 (Ctrl+I)',
+      underline: '下線',
+      underlineTitle: '下線 (Ctrl+U)',
+      strike: '取り消し線'
+    },
+    dialog: {
+      saveTitle: '保存',
+      saveMessage: '現在のアプリ全体を1つのHTMLファイルとして保存します。',
+      saveNameNote: 'この名前は左上のドキュメント名と保存ファイル名に使われます。',
+      saveFailed: 'エクスポートに失敗しました: {message}',
+      imageConvertFailed: '画像の変換に失敗しました',
+      imageTypeInvalid: 'image/* ではありません',
+      repairMessage: '保存データに不整合があったため、安全に起動できる形へ補正しました。',
+      repairTitle: 'データを補正しました',
+      largeFileTitle: '大きなファイル',
+      largeFileMessage: '画像サイズが8MBを超えています。保存データが大きくなります。続行しますか？',
+      continue: '続行',
+      fileReadFailed: 'ファイルの読み込みに失敗しました',
+      externalImageFailedTitle: '外部画像の取り込み失敗',
+      externalImageFailedMessage: '{count}件の外部画像を埋め込めませんでした。\nこのまま保存すると、共有先やオフラインでは表示が欠ける可能性があります。',
+      saveAnyway: 'そのまま保存',
+      resetThemeTitle: 'テーマのリセット',
+      resetThemeMessage: 'テーマをデフォルトに戻しますか？'
+    },
+    saveStatus: {
+      idbFallback: 'IndexedDB への保存に失敗したため、localStorage に退避しました。',
+      failed: '保存できませんでした。ブラウザのストレージ容量やプライベート設定を確認してください。',
+      unloadFailed: '終了前の退避保存に失敗しました。保存を書き出してください。'
+    },
+    theme: {
+      title: 'テーマをカスタマイズ',
+      language: '言語',
+      accent: 'テーマカラー（{mode}モード）',
+      customAccent: 'カスタムテーマカラー',
+      light: 'ライト',
+      dark: 'ダーク',
+      lightMode: 'ライトモード',
+      darkMode: 'ダークモード',
+      noteWidth: 'ノートの幅',
+      font: 'フォント',
+      widths: {
+        narrow: '狭い',
+        normal: '標準',
+        wide: '広い',
+        full: 'フル'
+      },
+      fonts: {
+        clarity: 'Noto Sans JP',
+        rounded: 'Meiryo',
+        editorial: 'Yu Mincho',
+        code: 'Code Mono'
+      },
+      chooseAccent: 'テーマカラー {color} を選択'
+    },
+    search: {
+      aria: 'ノート検索',
+      placeholder: 'ノートを検索 / 入力して新しいノートを作成',
+      recent: '最近のノート',
+      notesCount: 'ノート ({count})',
+      noResults: '結果がありません',
+      createHint: 'Enter で「{query}」を新しいノートとして作成',
+      createTitle: '「{query}」を新しいノートとして作成',
+      createAria: '{query}を新しいノートとして作成'
+    },
+    trash: {
+      title: 'ゴミ箱',
+      retentionTitle: '期間経過後に自動で完全削除',
+      retention: '自動削除',
+      off: 'オフ',
+      days: '{count}日',
+      emptyAll: 'すべて完全削除',
+      empty: 'ゴミ箱は空です',
+      lastAutoPurge: '直近の自動削除: {count}件（保持{days}日 / {time}）',
+      justNow: 'たった今',
+      minutesAgo: '{count}分前',
+      hoursAgo: '{count}時間前',
+      daysAgo: '{count}日前',
+      deletedAt: '{time}に削除',
+      includesChildren: '{count}個の子ノートを含む',
+      remaining: 'あと{count}日で削除',
+      restore: '復元',
+      purge: '完全削除',
+      purgeTitle: '完全削除',
+      purgeMessage: '「{title}」を完全に削除しますか？この操作は元に戻せません。',
+      emptyTitle: 'ゴミ箱を空にする',
+      emptyMessage: 'ゴミ箱内の{count}件のノートをすべて完全に削除しますか？この操作は元に戻せません。',
+      autoTitle: 'ゴミ箱の自動削除',
+      autoOk: '確認',
+      autoStartup: '起動時',
+      autoOpen: 'ゴミ箱を開いたとき',
+      autoMessage: '{where}に{count}件を自動で完全削除しました（保持期間: {days}日）。'
+    },
+    pageMenu: {
+      rename: '名前を変更',
+      addChild: '子ノートを追加',
+      duplicate: '複製',
+      duplicateSuffix: ' (コピー)',
+      exportMarkdown: 'Markdown でエクスポート',
+      moveToTrash: 'ゴミ箱に移動',
+      moveToTrashTitle: 'ゴミ箱に移動',
+      moveToTrashMessage: 'このノートをゴミ箱に移動しますか？',
+      move: '移動',
+      noteMenu: 'ノートメニュー',
+      expandChildren: '子ノートを展開',
+      collapseChildren: '子ノートを折りたたむ',
+      emptyShelf: 'ノートがありません'
+    },
+    blockTypes: {
+      text: { name: 'テキスト', desc: 'プレーンテキスト' },
+      h1: { name: '見出し1', desc: '大見出し' },
+      h2: { name: '見出し2', desc: '中見出し' },
+      h3: { name: '見出し3', desc: '小見出し' },
+      h4: { name: '見出し4', desc: '詳細見出し' },
+      h5: { name: '見出し5', desc: '互換表示用' },
+      h6: { name: '見出し6', desc: '互換表示用' },
+      toc: { name: '目次', desc: 'ページ内見出しから自動生成' },
+      bullet: { name: '箇条書きリスト', desc: '黒丸の箇条書き' },
+      numbered: { name: '番号付きリスト', desc: '番号付きリスト' },
+      todo: { name: 'ToDoリスト', desc: 'チェックボックス付きリスト' },
+      toggle: { name: 'トグルリスト', desc: '展開・折りたたみ可能なリスト' },
+      toggle_h1: { name: 'トグル見出し1', desc: '折りたたみ可能な見出し1' },
+      toggle_h2: { name: 'トグル見出し2', desc: '折りたたみ可能な見出し2' },
+      toggle_h3: { name: 'トグル見出し3', desc: '折りたたみ可能な見出し3' },
+      quote: { name: '引用', desc: '引用ブロック' },
+      code: { name: 'コード', desc: 'コードスニペット' },
+      divider: { name: '区切り線', desc: '水平の区切り線' },
+      callout: { name: 'コールアウト', desc: '強調された情報ボックス' },
+      requirement: { name: 'Requirement', desc: '互換表示用' },
+      open_question: { name: 'Open Question', desc: '互換表示用' },
+      api_spec: { name: 'API Spec', desc: '互換表示用' },
+      db_table: { name: 'DB Table', desc: '互換表示用' },
+      screen_spec: { name: 'Screen Spec', desc: '互換表示用' },
+      test_case: { name: 'Test Case', desc: '互換表示用' },
+      table: { name: 'テーブル', desc: 'シンプルなテーブル' },
+      image: { name: '画像', desc: '画像をURLまたはファイルから' },
+      mermaid: { name: 'Mermaid', desc: 'Mermaid 図をプレビュー' },
+      html: { name: 'HTML', desc: '互換保持用' }
+    },
+    block: {
+      currentType: '現在のブロックタイプ',
+      addBelowTitle: '下に追加（タイプを選択）',
+      addBelow: '下に追加',
+      menuTitle: 'ドラッグ・クリックでメニュー',
+      menu: 'ブロックメニュー',
+      duplicate: '複製',
+      delete: '削除',
+      input: '入力する',
+      placeholders: {
+        text: '入力または「/」で見出し・リストなどを追加',
+        h1: '見出し 1',
+        h2: '見出し 2',
+        h3: '見出し 3',
+        h4: '見出し 4',
+        toggle_h1: 'トグル見出し 1',
+        toggle_h2: 'トグル見出し 2',
+        toggle_h3: 'トグル見出し 3',
+        quote: '引用を書く',
+        bullet: 'リスト項目',
+        numbered: 'リスト項目',
+        todo: 'ToDo',
+        toggle: 'トグル',
+        callout: 'コールアウトを書く',
+        decision: '決定内容を書く',
+        requirement: '要求事項を書く',
+        open_question: '確認したい質問を書く',
+        risk: 'リスク内容を書く'
+      },
+      codeLanguage: '言語を選択',
+      codeWrapOn: '右端で折り返す: ON',
+      codeWrapOff: '右端で折り返す: OFF',
+      codeWrapTitle: '折り返しの切替',
+      copy: 'コピー',
+      copied: 'コピー済み',
+      codePlaceholder: 'コードを入力',
+      tableAddRow: '+ 行',
+      tableAddColumn: '+ 列',
+      tableRemoveRow: '- 行',
+      tableRemoveColumn: '- 列',
+      tableHeaderRowOn: 'ヘッダー行: ON',
+      tableHeaderRowOff: 'ヘッダー行: OFF',
+      tableHeaderColumnOn: 'ヘッダー列: ON',
+      tableHeaderColumnOff: 'ヘッダー列: OFF',
+      imageLoadFailed: '画像の読み込みに失敗しました',
+      imageReplace: '変更',
+      imageCaption: 'キャプション (任意)',
+      selectImage: '画像ファイルを選択',
+      addImage: '画像を追加',
+      imageDropHint: 'クリックで選択、またはここにドラッグ＆ドロップ',
+      chooseFile: 'ファイルから選択',
+      enterUrl: 'URLを入力',
+      imageUrlTitle: '画像URL',
+      imageUrlPrompt: '画像のURLを入力してください',
+      add: '追加',
+      untitledHeading: '無題の見出し',
+      toc: '目次',
+      tocEmpty: '見出しがありません',
+      tocAria: 'ページ内目次',
+      htmlPreview: 'HTML プレビュー',
+      mathInput: '数式を入力',
+      mermaidInput: 'Mermaid を入力',
+      footnote: '脚注',
+      footnoteLabel: '脚注ラベル',
+      footnoteBody: '脚注本文',
+      linkReference: '参照リンク',
+      label: 'ラベル',
+      title: 'タイトル',
+      term: '用語',
+      definition: '定義',
+      columns: 'Columns',
+      addColumn: '+ Column',
+      remove: '削除',
+      toggleCollapse: 'トグルを折りたたむ',
+      toggleExpand: 'トグルを展開',
+      emptyToggle: '空のトグル。クリックで追加',
+      changeCalloutIconTitle: 'クリックでマーク変更',
+      changeCalloutIcon: 'コールアウトアイコンを変更'
+    },
+    iconPicker: {
+      emoji: '絵文字',
+      icon: 'アイコン',
+      emojiSearch: '絵文字を検索（カテゴリ名）...',
+      iconSearch: 'アイコン名・カテゴリ名を検索...',
+      random: 'ランダム',
+      remove: '削除',
+      removeTitle: 'アイコンを削除',
+      choose: '{name} を選択',
+      categories: {
+        notes: 'ノート',
+        status: 'ステータス',
+        work: '仕事',
+        life: '生活',
+        operations: '基本操作',
+        business: 'ビジネス',
+        media: 'メディア',
+        development: '開発'
+      }
+    },
+    shortcuts: {
+      title: 'キーボードショートカット',
+      run: 'クリックで実行',
+      groups: {
+        general: '一般',
+        inline: 'インライン書式',
+        insert: 'ブロック挿入（Markdownショートカット）',
+        edit: 'ブロック編集',
+        selection: 'ブロック複数選択時',
+        quick: 'クイックアクション（クリックで実行）'
+      },
+      items: {
+        openSearch: 'ノート検索を開く',
+        showShortcuts: 'このショートカット一覧を表示',
+        undo: '元に戻す',
+        redo: 'やり直し',
+        closeModal: 'モーダル / メニューを閉じる',
+        bold: '太字',
+        italic: '斜体',
+        underline: '下線',
+        heading1: '見出し1',
+        heading2: '見出し2',
+        heading3: '見出し3',
+        bullet: '箇条書き（* / + も可）',
+        numbered: '番号付きリスト',
+        todo: 'To-do',
+        toggle: 'トグル',
+        quote: '引用',
+        code: 'コードブロック',
+        divider: '区切り線',
+        blockMenu: 'ブロックメニュー（スラッシュコマンド）',
+        nextBlock: '次のブロックを作成',
+        lineBreak: 'ブロック内で改行',
+        backspace: '空ブロック削除 / 前ブロックへ結合',
+        prevBlock: '前のブロックへ移動（行頭時）',
+        nextBlockMove: '次のブロックへ移動（行末時）',
+        selectAllBlocks: 'ブロック全選択（複数選択モード）',
+        copyBlocks: '選択ブロックをコピー',
+        cutBlocks: '選択ブロックをカット',
+        deleteBlocks: '選択ブロックを削除',
+        clearSelection: '選択を解除',
+        newNote: '新しいノートを作成',
+        customizeTheme: 'テーマをカスタマイズ',
+        toggleDarkMode: 'ダークモードを切り替え',
+        toggleSidebar: 'サイドバーを開閉',
+        openTrash: 'ゴミ箱を開く',
+        importMarkdown: 'Markdown ファイルをインポート',
+        exportMarkdown: '現在のノートを Markdown でエクスポート',
+        save: '保存'
+      }
+    },
+    initial: {
+      title: 'LeafNote へようこそ',
+      intro: '<b>LeafNote</b> は、ブラウザだけで動くローカルファーストのノートブックです。メモ、タスク、資料、作業ログをこの1つのHTMLで整理できます。',
+      firstSteps: 'まず試すこと',
+      stepShelf: '左のノート棚でノートを作成し、子ノートとして階層化できます。',
+      stepIcon: 'ノート名の横にあるアイコンから、用途に合う絵文字や Material アイコンを選べます。',
+      stepSlash: '空の行で <b>/</b> を入力すると、見出し・ToDo・表・画像などのブロックを追加できます。',
+      stepSearch: '<b>Cmd/Ctrl + K</b> でノートを検索し、見つからない名前はそのまま新規ノートにできます。',
+      autosave: '内容はこのブラウザに自動保存されます。サイドバーの「保存」から、現在の状態を埋め込んだHTMLファイルとして書き出せます。',
+      checklist: '使い始めのチェックリスト',
+      todoHome: 'このノートを自分用のトップページに書き換える',
+      todoCategories: '仕事・学習・生活など、よく使うカテゴリのノートを作る',
+      todoIcons: '重要なノートにはアイコンを設定して、サイドバーで見つけやすくする'
+    }
+  }
+};
+
+function normalizeUiLanguage(value) {
+  return UI_LANGUAGES.has(value) ? value : DEFAULT_UI_LANGUAGE;
+}
+
+function _i18nLookup(locale, key) {
+  return String(key || '').split('.').reduce((obj, part) => (
+    obj && Object.prototype.hasOwnProperty.call(obj, part) ? obj[part] : undefined
+  ), I18N[locale]);
+}
+
+function t(key, params = {}) {
+  const locale = normalizeUiLanguage(state && state.uiLanguage);
+  const value = _i18nLookup(locale, key) ?? _i18nLookup(DEFAULT_UI_LANGUAGE, key) ?? key;
+  return String(value).replace(/\{(\w+)\}/g, (_, name) => (
+    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : ''
+  ));
+}
+
+function _setText(sel, text) {
+  const $el = qs(sel);
+  if ($el) $el.textContent = text;
+}
+
+function _setAttr(sel, attr, text) {
+  const $el = qs(sel);
+  if ($el) $el.setAttribute(attr, text);
+}
+
+function _setOptionText(value, text) {
+  const $option = qs(`#trash-retention-select option[value="${value}"]`);
+  if ($option) $option.textContent = text;
+}
+
+function getBlockTypeName(item) {
+  return t(`blockTypes.${item.type}.name`);
+}
+
+function getBlockTypeDesc(item) {
+  return t(`blockTypes.${item.type}.desc`);
+}
+
+function applyLanguage() {
+  state.uiLanguage = normalizeUiLanguage(state.uiLanguage);
+  document.documentElement.lang = state.uiLanguage;
+  document.title = t('appTitle');
+  _setAttr('#document-name', 'data-placeholder', t('common.documentName'));
+  _setAttr('#sidebar-toggle', 'title', t('common.closeSidebar'));
+  _setAttr('#sidebar-toggle', 'aria-label', t('common.closeSidebar'));
+  _setAttr('#sidebar-open', 'aria-label', t('common.openSidebar'));
+  _setAttr('#sidebar-resizer', 'title', t('common.resizeSidebar'));
+  _setAttr('#private-add-btn', 'title', t('common.newNote'));
+  _setAttr('#private-add-btn', 'aria-label', t('common.newNote'));
+  _setAttr('#note-icon', 'aria-label', t('common.changeNoteIcon'));
+  _setAttr('#page-title', 'data-placeholder', t('common.untitled'));
+  _setText('#search-label', t('common.search'));
+  _setText('#settings-label', t('common.settings'));
+  _setText('#trash-label', t('common.trash'));
+  _setText('#export-label', t('common.save'));
+  _setText('#shelf-label', t('common.noteShelf'));
+  _setText('#new-page-label', t('common.newNote'));
+  _setText('#add-icon-label', t('common.changeIcon'));
+  _setAttr('#search-modal', 'aria-label', t('search.aria'));
+  _setAttr('#search-input', 'placeholder', t('search.placeholder'));
+  _setText('#theme-title', t('theme.title'));
+  _setText('#theme-reset-btn', t('common.reset'));
+  _setText('#theme-done-btn', t('common.done'));
+  _setText('#trash-title', t('trash.title'));
+  _setAttr('#trash-retention-label', 'title', t('trash.retentionTitle'));
+  const $trashRetentionLabel = qs('#trash-retention-label');
+  if ($trashRetentionLabel && $trashRetentionLabel.firstChild) {
+    $trashRetentionLabel.firstChild.nodeValue = `\n        ${t('trash.retention')}\n        `;
+  }
+  _setOptionText('0', t('trash.off'));
+  _setOptionText('7', t('trash.days', { count: 7 }));
+  _setOptionText('30', t('trash.days', { count: 30 }));
+  _setOptionText('90', t('trash.days', { count: 90 }));
+  _setText('#trash-empty-btn', t('trash.emptyAll'));
+  _setText('#shortcuts-title', t('shortcuts.title'));
+  _setAttr('[data-cmd="bold"]', 'title', t('inlineToolbar.boldTitle'));
+  _setAttr('[data-cmd="bold"]', 'aria-label', t('inlineToolbar.bold'));
+  _setAttr('[data-cmd="italic"]', 'title', t('inlineToolbar.italicTitle'));
+  _setAttr('[data-cmd="italic"]', 'aria-label', t('inlineToolbar.italic'));
+  _setAttr('[data-cmd="underline"]', 'title', t('inlineToolbar.underlineTitle'));
+  _setAttr('[data-cmd="underline"]', 'aria-label', t('inlineToolbar.underline'));
+  _setAttr('[data-cmd="strikeThrough"]', 'title', t('inlineToolbar.strike'));
+  _setAttr('[data-cmd="strikeThrough"]', 'aria-label', t('inlineToolbar.strike'));
+  if (typeof applyTheme === 'function') applyTheme();
+}
 
 /* ==================== HTML Sanitizer ==================== */
 // Whitelist-based sanitizer for block.content / titles / cells / captions.
@@ -2866,6 +3627,7 @@ function sanitizeStateInPlace(s) {
     if (Array.isArray(p.blocks)) sanitizeBlocksDeep(p.blocks);
   }
   if (typeof s.workspaceName === 'string') s.workspaceName = sanitizePlainText(s.workspaceName);
+  s.uiLanguage = normalizeUiLanguage(s.uiLanguage);
   s.plainTextSanitizerVersion = PLAIN_TEXT_SANITIZER_VERSION;
   return s;
 }
@@ -3101,6 +3863,7 @@ function _applyHistorySnapshot(snapshot) {
   const focusSnapshot = _captureHistoryFocus();
   state = JSON.parse(snapshot);
   _lastPersistedStateJSON = JSON.stringify(state);
+  applyLanguage();
   applyTheme();
   applyThemeCustom();
   renderAll();
@@ -3147,12 +3910,12 @@ async function _doSave() {
       localStorage.setItem(STATE_STORAGE_KEY, snapshot);
       _lastPersistedStateJSON = snapshot;
       didFallbackSave = true;
-      const msg = 'IndexedDB への保存に失敗したため、localStorage に退避しました。';
+      const msg = t('saveStatus.idbFallback');
       if (_lastSaveFailureMessage !== msg) setSaveStatus('warning', msg);
       _lastSaveFailureMessage = msg;
     } catch (_) {}
     if (!didFallbackSave) {
-      const msg = '保存できませんでした。ブラウザのストレージ容量やプライベート設定を確認してください。';
+      const msg = t('saveStatus.failed');
       setSaveStatus('error', msg, { persistent: true });
       _lastSaveFailureMessage = msg;
     }
@@ -3191,7 +3954,7 @@ function flushStateToLocalStorageSync() {
     localStorage.setItem(STATE_STORAGE_KEY, snapshot);
     _lastPersistedStateJSON = snapshot;
   } catch (_) {
-    setSaveStatus('error', '終了前の退避保存に失敗しました。保存を書き出してください。', { persistent: true });
+    setSaveStatus('error', t('saveStatus.unloadFailed'), { persistent: true });
   }
 }
 
@@ -3247,8 +4010,10 @@ const BLOCK_PICKER_TYPES = [
 function getBlockPickerTypes(query = '') {
   const q = String(query || '').trim().toLowerCase();
   if (!q) return BLOCK_PICKER_TYPES;
-  return BLOCK_PICKER_TYPES.filter((t) =>
-    t.name.toLowerCase().includes(q) || t.keys.some((k) => k.toLowerCase().includes(q))
+  return BLOCK_PICKER_TYPES.filter((item) =>
+    getBlockTypeName(item).toLowerCase().includes(q)
+    || getBlockTypeDesc(item).toLowerCase().includes(q)
+    || item.keys.some((k) => k.toLowerCase().includes(q))
   );
 }
 
@@ -3302,7 +4067,7 @@ function hideDialog(result) {
   if (dialogResolver) { const r = dialogResolver; dialogResolver = null; r(result); }
 }
 
-function showAlert(message, { title = 'お知らせ', okText = 'OK' } = {}) {
+function showAlert(message, { title = t('common.notice'), okText = t('common.ok') } = {}) {
   return new Promise((resolve) => {
     dialogResolver = resolve;
     dialogBox.innerHTML = `
@@ -3316,7 +4081,7 @@ function showAlert(message, { title = 'お知らせ', okText = 'OK' } = {}) {
   });
 }
 
-function showConfirm(message, { title = '確認', okText = 'OK', cancelText = 'キャンセル', danger = false } = {}) {
+function showConfirm(message, { title = t('common.confirm'), okText = t('common.ok'), cancelText = t('common.cancel'), danger = false } = {}) {
   return new Promise((resolve) => {
     dialogResolver = resolve;
     dialogBox.innerHTML = `
@@ -3332,7 +4097,7 @@ function showConfirm(message, { title = '確認', okText = 'OK', cancelText = '�
   });
 }
 
-function showPrompt(message, { title = '入力', okText = 'OK', cancelText = 'キャンセル', defaultValue = '', placeholder = '' } = {}) {
+function showPrompt(message, { title = t('common.input'), okText = t('common.ok'), cancelText = t('common.cancel'), defaultValue = '', placeholder = '' } = {}) {
   return new Promise((resolve) => {
     dialogResolver = resolve;
     dialogBox.innerHTML = `
@@ -3366,18 +4131,18 @@ function showSaveDocumentDialog() {
     const currentName = getDocumentName();
     dialogBox.className = 'dialog save-dialog';
     dialogBox.innerHTML = `
-      <div class="dialog-title" id="dialog-title">保存</div>
+      <div class="dialog-title" id="dialog-title">${escapeHTML(t('dialog.saveTitle'))}</div>
       <div class="dialog-body">
-        <div class="dialog-save-message">現在のアプリ全体を1つのHTMLファイルとして保存します。</div>
+        <div class="dialog-save-message">${escapeHTML(t('dialog.saveMessage'))}</div>
         <label class="dialog-field">
-          <span class="dialog-label">ドキュメント名</span>
-          <input class="dialog-input" type="text" value="${escapeHTML(currentName)}" placeholder="ドキュメント名">
+          <span class="dialog-label">${escapeHTML(t('common.documentName'))}</span>
+          <input class="dialog-input" type="text" value="${escapeHTML(currentName)}" placeholder="${escapeHTML(t('common.documentName'))}">
         </label>
-        <div class="dialog-note">この名前は左上のドキュメント名と保存ファイル名に使われます。</div>
+        <div class="dialog-note">${escapeHTML(t('dialog.saveNameNote'))}</div>
       </div>
       <div class="dialog-actions">
-        <button class="dialog-btn" data-cancel>キャンセル</button>
-        <button class="dialog-btn primary" data-ok>保存</button>
+        <button class="dialog-btn" data-cancel>${escapeHTML(t('common.cancel'))}</button>
+        <button class="dialog-btn primary" data-ok>${escapeHTML(t('common.save'))}</button>
       </div>`;
     const $input = dialogBox.querySelector('.dialog-input');
     const submit = () => hideDialog($input.value.trim() || DEFAULT_DOCUMENT_NAME);
@@ -3419,30 +4184,125 @@ document.addEventListener('keydown', (e) => {
 }, true);
 
 /* ==================== State ==================== */
+const INITIAL_WELCOME_BLOCKS = [
+  { type: 'text', key: 'intro' },
+  { type: 'h2', key: 'firstSteps' },
+  { type: 'bullet', key: 'stepShelf' },
+  { type: 'bullet', key: 'stepIcon' },
+  { type: 'bullet', key: 'stepSlash' },
+  { type: 'bullet', key: 'stepSearch' },
+  { type: 'callout', key: 'autosave', extra: { emoji: '💡', emojiType: 'emoji', hasIcon: true } },
+  { type: 'h2', key: 'checklist' },
+  { type: 'todo', key: 'todoHome' },
+  { type: 'todo', key: 'todoCategories' },
+  { type: 'todo', key: 'todoIcons' }
+];
+const INITIAL_WELCOME_TITLE_ALIASES = {
+  en: ['Welcome to LeafNote'],
+  ja: ['LeafNote へようこそ', 'LeafNoteへようこそ']
+};
+
+function _getInitialWelcome(locale) {
+  return I18N[normalizeUiLanguage(locale)].initial;
+}
+
+function _getInitialWelcomeBlueprint(locale) {
+  const initial = _getInitialWelcome(locale);
+  return INITIAL_WELCOME_BLOCKS.map((item) => ({
+    type: item.type,
+    content: initial[item.key],
+    extra: item.extra || {}
+  }));
+}
+
+function _createInitialWelcomeBlocks(locale) {
+  return _getInitialWelcomeBlueprint(locale).map((item) => blk(item.type, item.content, item.extra));
+}
+
+function _normalizeInitialWelcomeText(value) {
+  return String(value || '').replace(/\u00a0/g, ' ').trim();
+}
+
+function _isInitialWelcomeTitle(locale, title) {
+  const normalizedTitle = _normalizeInitialWelcomeText(title);
+  const aliases = INITIAL_WELCOME_TITLE_ALIASES[locale] || [_getInitialWelcome(locale).title];
+  return aliases.some((candidate) => _normalizeInitialWelcomeText(candidate) === normalizedTitle);
+}
+
+function _matchesInitialWelcomeBlocks(page, locale) {
+  if (!page || !Array.isArray(page.blocks)) return false;
+  const blueprint = _getInitialWelcomeBlueprint(locale);
+  if (page.blocks.length !== blueprint.length) return false;
+  return blueprint.every((expected, index) => {
+    const block = page.blocks[index];
+    if (!block || block.type !== expected.type) return false;
+    if (_normalizeInitialWelcomeText(block.content) !== _normalizeInitialWelcomeText(expected.content)) return false;
+    if (Array.isArray(block.children) && block.children.length) return false;
+    if (block.type === 'todo' && block.checked) return false;
+    if (block.type === 'callout') {
+      if (block.hasIcon === false) return false;
+      if (block.emoji && block.emoji !== '💡') return false;
+    }
+    return true;
+  });
+}
+
+function _getInitialWelcomePageLocale(page) {
+  for (const locale of UI_LANGUAGES) {
+    if (_isInitialWelcomeTitle(locale, page.title) && _matchesInitialWelcomeBlocks(page, locale)) return locale;
+  }
+  return null;
+}
+
+function _applyInitialWelcomePageLocale(page, locale) {
+  const initial = _getInitialWelcome(locale);
+  const blueprint = _getInitialWelcomeBlueprint(locale);
+  page.title = initial.title;
+  page.icon = '👋';
+  page.iconType = 'emoji';
+  page.hasIcon = true;
+  page.blocks.forEach((block, index) => {
+    const expected = blueprint[index];
+    block.type = expected.type;
+    block.content = expected.content;
+    block.children = [];
+    if (block.type === 'todo') block.checked = false;
+    if (block.type === 'callout') {
+      block.emoji = '💡';
+      block.emojiType = 'emoji';
+      block.hasIcon = true;
+    }
+  });
+}
+
+function _localizeInitialWelcomePages(locale) {
+  if (!state || !state.pages) return false;
+  const next = normalizeUiLanguage(locale);
+  let changed = false;
+  Object.values(state.pages).forEach((page) => {
+    if (!page || page.deletedAt || page.parentId) return;
+    const currentLocale = _getInitialWelcomePageLocale(page);
+    if (!currentLocale || currentLocale === next) return;
+    _applyInitialWelcomePageLocale(page, next);
+    changed = true;
+  });
+  return changed;
+}
+
 let state = createInitialState();
 _lastPersistedStateJSON = JSON.stringify(state);
 
 function createInitialState() {
   const wid = uid();
+  const initial = I18N[DEFAULT_UI_LANGUAGE].initial;
   return {
     pages: { [wid]: {
-      id: wid, title: 'LeafNote へようこそ', icon: '👋', iconType: 'emoji', hasIcon: true, parentId: null,
-      blocks: [
-        blk('text', '<b>LeafNote</b> は、ブラウザだけで動くローカルファーストのノートブックです。メモ、タスク、資料、作業ログをこの1つのHTMLで整理できます。'),
-        blk('h2', 'まず試すこと'),
-        blk('bullet', '左のノート棚でノートを作成し、子ノートとして階層化できます。'),
-        blk('bullet', 'ノート名の横にあるアイコンから、用途に合う絵文字や Material アイコンを選べます。'),
-        blk('bullet', '空の行で <b>/</b> を入力すると、見出し・ToDo・表・画像などのブロックを追加できます。'),
-        blk('bullet', '<b>Cmd/Ctrl + K</b> でノートを検索し、見つからない名前はそのまま新規ノートにできます。'),
-        blk('callout', '内容はこのブラウザに自動保存されます。サイドバーの「保存」から、現在の状態を埋め込んだHTMLファイルとして書き出せます。', { emoji: '💡' }),
-        blk('h2', '使い始めのチェックリスト'),
-        blk('todo', 'このノートを自分用のトップページに書き換える'),
-        blk('todo', '仕事・学習・生活など、よく使うカテゴリのノートを作る'),
-        blk('todo', '重要なノートにはアイコンを設定して、サイドバーで見つけやすくする')
-      ],
+      id: wid, title: initial.title, icon: '👋', iconType: 'emoji', hasIcon: true, parentId: null,
+      blocks: _createInitialWelcomeBlocks(DEFAULT_UI_LANGUAGE),
       children: [], createdAt: Date.now(), updatedAt: Date.now()
     }},
     rootPages: [wid], currentPageId: wid, darkMode: false,
+    uiLanguage: DEFAULT_UI_LANGUAGE,
     workspaceName: DEFAULT_DOCUMENT_NAME,
     plainTextSanitizerVersion: PLAIN_TEXT_SANITIZER_VERSION,
     lastModifiedAt: Date.now(),
@@ -3561,6 +4421,7 @@ function normalizeStateShape(rawState) {
     rootPages: [],
     currentPageId: '',
     darkMode: rawState.darkMode === true,
+    uiLanguage: normalizeUiLanguage(rawState.uiLanguage),
     lastModifiedAt: Number.isFinite(+rawState.lastModifiedAt) ? +rawState.lastModifiedAt : 0,
     workspaceName: (typeof rawDocumentName === 'string' && rawDocumentName.trim())
       ? normalizeStoredPlainText(rawDocumentName)
@@ -3852,7 +4713,7 @@ const expandedPages = new Set();
 function renderSidebar() {
   const tree = $('#page-tree'); tree.innerHTML = '';
   const livePages = state.rootPages.filter(pid => state.pages[pid] && !state.pages[pid].deletedAt);
-  if (!livePages.length) { tree.innerHTML = '<div class="empty-state" style="padding:20px 0">ノートがありません</div>'; return; }
+  if (!livePages.length) { tree.innerHTML = `<div class="empty-state" style="padding:20px 0">${escapeHTML(t('pageMenu.emptyShelf'))}</div>`; return; }
   livePages.forEach(pid => tree.appendChild(renderPageNode(pid, 0)));
 }
 
@@ -3884,12 +4745,12 @@ function renderPageNode(pid, depth) {
   item.dataset.pageId = pid;
   item.setAttribute('role', 'button');
   item.setAttribute('tabindex', '0');
-  item.setAttribute('aria-label', `${page.title || '無題'}を開く`);
+  item.setAttribute('aria-label', t('common.openNote', { title: page.title || t('common.untitled') }));
   if (pid === state.currentPageId) item.setAttribute('aria-current', 'page');
 
   const chev = document.createElement('button'); chev.type = 'button'; chev.className = 'page-item-chevron';
   chev.disabled = !hasVisibleChildren;
-  chev.setAttribute('aria-label', isExpanded ? '子ノートを折りたたむ' : '子ノートを展開');
+  chev.setAttribute('aria-label', isExpanded ? t('pageMenu.collapseChildren') : t('pageMenu.expandChildren'));
   chev.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
   chev.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>';
   chev.onclick = (e) => { e.stopPropagation(); expandedPages.has(pid) ? expandedPages.delete(pid) : expandedPages.add(pid); renderSidebar(); };
@@ -3898,13 +4759,13 @@ function renderPageNode(pid, depth) {
   icon.innerHTML = renderPageIconHTML(page, 17);
 
   const title = document.createElement('div'); title.className = 'page-item-title';
-  title.textContent = page.title || '無題';
+  title.textContent = page.title || t('common.untitled');
 
   const actions = document.createElement('div'); actions.className = 'page-item-actions';
-  const moreBtn = document.createElement('button'); moreBtn.className = 'page-item-action'; moreBtn.setAttribute('aria-label', 'ノートメニュー');
+  const moreBtn = document.createElement('button'); moreBtn.className = 'page-item-action'; moreBtn.setAttribute('aria-label', t('pageMenu.noteMenu'));
   moreBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>';
   moreBtn.onclick = (e) => { e.stopPropagation(); showPageContextMenu(e, pid); };
-  const addBtn = document.createElement('button'); addBtn.className = 'page-item-action'; addBtn.setAttribute('aria-label', '子ノートを追加');
+  const addBtn = document.createElement('button'); addBtn.className = 'page-item-action'; addBtn.setAttribute('aria-label', t('pageMenu.addChild'));
   addBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">add</span>';
   addBtn.onclick = (e) => { e.stopPropagation(); const np = createPage(pid); expandedPages.add(pid); switchPage(np.id); };
   actions.appendChild(moreBtn); actions.appendChild(addBtn);
@@ -3928,18 +4789,18 @@ function renderPageNode(pid, depth) {
 /* ==================== Page Context Menu ==================== */
 function showPageContextMenu(e, pid) {
   const items = [
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">edit</span>', label: '名前を変更', fn: () => {
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">edit</span>', label: t('pageMenu.rename'), fn: () => {
       // Switch to the target page first so the title focus is on the right one.
       const focusTitle = () => { const el = $('#page-title'); if (el) { el.focus(); document.execCommand('selectAll'); } };
       if (state.currentPageId !== pid) { switchPage(pid); setTimeout(focusTitle, 50); }
       else focusTitle();
     } },
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">note_add</span>', label: '子ノートを追加', fn: () => { const np = createPage(pid); expandedPages.add(pid); switchPage(np.id); } },
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">content_copy</span>', label: '複製', fn: () => duplicatePage(pid) },
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">note_add</span>', label: t('pageMenu.addChild'), fn: () => { const np = createPage(pid); expandedPages.add(pid); switchPage(np.id); } },
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">content_copy</span>', label: t('pageMenu.duplicate'), fn: () => duplicatePage(pid) },
     { divider: true },
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">save</span>', label: 'Markdown でエクスポート', fn: () => exportPageAsMarkdown(pid) },
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">save</span>', label: t('pageMenu.exportMarkdown'), fn: () => exportPageAsMarkdown(pid) },
     { divider: true },
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">delete</span>', label: 'ゴミ箱に移動', danger: true, fn: async () => { const ok = await showConfirm('このノートをゴミ箱に移動しますか？', { title: 'ゴミ箱に移動', okText: '移動', danger: true }); if (ok) { deletePage(pid); renderAll(); } } }
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">delete</span>', label: t('pageMenu.moveToTrash'), danger: true, fn: async () => { const ok = await showConfirm(t('pageMenu.moveToTrashMessage'), { title: t('pageMenu.moveToTrashTitle'), okText: t('pageMenu.move'), danger: true }); if (ok) { deletePage(pid); renderAll(); } } }
   ];
   showContextMenu(e, items);
 }
@@ -3972,7 +4833,7 @@ function duplicatePage(id) {
   };
   const root = dupRecursive(id, orig.parentId || null);
   if (!root) return null;
-  root.title = (orig.title || '無題') + ' (コピー)';
+  root.title = (orig.title || t('common.untitled')) + t('pageMenu.duplicateSuffix');
   if (root.parentId && state.pages[root.parentId]) state.pages[root.parentId].children.push(root.id);
   else { root.parentId = null; state.rootPages.push(root.id); }
   saveState(); renderSidebar();
@@ -4986,7 +5847,7 @@ function parseMarkdownToBlocks(md) {
 
 function exportPageAsMarkdown(pageId) {
   const page = state.pages[pageId] || getCurrentPage(); if (!page) return;
-  const title = page.title || '無題';
+  const title = page.title || t('common.untitled');
   const md = `# ${title}\n\n` + blocksToMarkdown(page.blocks || []);
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -5002,7 +5863,7 @@ function importMarkdownAsNewPage() {
   input.onchange = async () => {
     const f = input.files && input.files[0]; if (!f) return;
     const text = await f.text();
-    let title = (f.name || 'インポート').replace(/\.(md|markdown|txt)$/i, '');
+    let title = (f.name || 'Import').replace(/\.(md|markdown|txt)$/i, '');
     let body = text;
     const firstHeading = /^#\s+(.+)$/m.exec(text);
     if (firstHeading) {
@@ -5044,7 +5905,7 @@ function showContextMenu(anchor, items, options = {}) {
     if (item.current) el.setAttribute('aria-current', 'true');
     if (item.block) {
       const currentIndicator = item.current
-        ? '<div class="ctx-current-indicator" aria-label="現在のブロックタイプ"><span class="material-symbols-outlined" aria-hidden="true">check</span></div>'
+        ? `<div class="ctx-current-indicator" aria-label="${escapeHTML(t('block.currentType'))}"><span class="material-symbols-outlined" aria-hidden="true">check</span></div>`
         : '';
       el.innerHTML = `<div class="ctx-block-icon">${item.icon || ''}</div><div class="ctx-block-meta"><div class="ctx-block-name">${escapeHTML(item.label)}</div>${isBlockPicker ? '' : `<div class="ctx-block-desc">${escapeHTML(item.desc || '')}</div>`}</div>${currentIndicator}`;
     } else {
@@ -5233,16 +6094,16 @@ function renderBlock(block, parentList) {
 /* ----- Gutter (draggable + add button) ----- */
 function buildGutter(block, parentList) {
   const gutter = document.createElement('div'); gutter.className = 'block-gutter';
-  const aBtn = document.createElement('button'); aBtn.className = 'block-gutter-btn'; aBtn.title = '下に追加（タイプを選択）';
-  aBtn.setAttribute('aria-label', '下に追加');
+  const aBtn = document.createElement('button'); aBtn.className = 'block-gutter-btn'; aBtn.title = t('block.addBelowTitle');
+  aBtn.setAttribute('aria-label', t('block.addBelow'));
   aBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">add</span>';
   aBtn.onclick = (e) => {
     e.stopPropagation();
     const items = getBlockPickerTypes().map((t) => ({
       block: true,
       icon: `<span class="material-symbols-outlined" style="font-size:20px">${t.matIcon}</span>`,
-      label: t.name,
-      desc: t.desc,
+      label: getBlockTypeName(t),
+      desc: getBlockTypeDesc(t),
       fn: () => {
         const nb = blk(t.type, '');
         insertBlockAfter(nb, block.id, parentList);
@@ -5252,8 +6113,8 @@ function buildGutter(block, parentList) {
     }));
     showContextMenu(aBtn, items, { variant: 'block-picker' });
   };
-  const dBtn = document.createElement('button'); dBtn.className = 'block-gutter-btn block-drag'; dBtn.title = 'ドラッグ・クリックでメニュー';
-  dBtn.setAttribute('aria-label', 'ブロックメニュー');
+  const dBtn = document.createElement('button'); dBtn.className = 'block-gutter-btn block-drag'; dBtn.title = t('block.menuTitle');
+  dBtn.setAttribute('aria-label', t('block.menu'));
   dBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">drag_indicator</span>';
   dBtn.draggable = true;
   dBtn.onclick = (e) => { e.stopPropagation(); showBlockContextMenu(e, block); };
@@ -5315,7 +6176,7 @@ function renderCodeBlock(block, el, parentList) {
   if (block.wrap) wrap.classList.add('wrap');
 
   const langSel = document.createElement('select'); langSel.className = 'code-lang-selector';
-  langSel.title = '言語を選択';
+  langSel.title = t('block.codeLanguage');
   const currentLanguage = _normalizeCodeLanguage(block.language || 'plain text');
   _getCodeLanguageOptions(currentLanguage).forEach(l => {
     const o = document.createElement('option'); o.value = l; o.textContent = l;
@@ -5326,16 +6187,16 @@ function renderCodeBlock(block, el, parentList) {
   langSel.onclick = (e) => e.stopPropagation();
 
   const wrapBtn = document.createElement('button'); wrapBtn.className = 'code-action-btn code-wrap-btn';
-  wrapBtn.textContent = block.wrap ? '右端で折り返す: ON' : '右端で折り返す: OFF';
-  wrapBtn.title = '折り返しの切替';
+  wrapBtn.textContent = block.wrap ? t('block.codeWrapOn') : t('block.codeWrapOff');
+  wrapBtn.title = t('block.codeWrapTitle');
   wrapBtn.onclick = (e) => { e.stopPropagation(); block.wrap = !block.wrap; saveState(); renderEditor(); };
 
-  const copyBtn = document.createElement('button'); copyBtn.className = 'code-action-btn code-copy-btn'; copyBtn.textContent = 'コピー';
+  const copyBtn = document.createElement('button'); copyBtn.className = 'code-action-btn code-copy-btn'; copyBtn.textContent = t('block.copy');
   copyBtn.onclick = (e) => {
     e.stopPropagation();
     navigator.clipboard.writeText(block.content || '').then(() => {
-      copyBtn.textContent = 'コピー済み';
-      setTimeout(() => copyBtn.textContent = 'コピー', 1500);
+      copyBtn.textContent = t('block.copied');
+      setTimeout(() => copyBtn.textContent = t('block.copy'), 1500);
     });
   };
 
@@ -5348,7 +6209,7 @@ function renderCodeBlock(block, el, parentList) {
   codeInner.contentEditable = 'plaintext-only';
   codeInner.textContent = block.content || '';
   codeInner.dataset.blockId = block.id;
-  codeInner.dataset.placeholder = 'コードを入力';
+  codeInner.dataset.placeholder = t('block.codePlaceholder');
   codeC.appendChild(codeInner);
 
   // Re-apply syntax highlight, preserving caret position
@@ -5475,12 +6336,12 @@ function renderTableBlock(block, el, parentList) {
 
   const controls = document.createElement('div'); controls.className = 'table-controls';
   const btn = (text, onClick) => { const b = document.createElement('button'); b.className = 'table-ctl-btn'; b.textContent = text; b.onclick = onClick; return b; };
-  controls.appendChild(btn('+ 行', () => { block.rows++; block.cells.push(Array.from({length: block.cols}, () => '')); saveState(); renderEditor(); }));
-  controls.appendChild(btn('+ 列', () => { block.cols++; block.cells.forEach(row => row.push('')); saveState(); renderEditor(); }));
-  controls.appendChild(btn('− 行', () => { if (block.rows > 1) { block.rows--; block.cells.pop(); saveState(); renderEditor(); } }));
-  controls.appendChild(btn('− 列', () => { if (block.cols > 1) { block.cols--; block.cells.forEach(row => row.pop()); saveState(); renderEditor(); } }));
-  controls.appendChild(btn(block.hasHeaderRow ? 'ヘッダー行: ON' : 'ヘッダー行: OFF', () => { block.hasHeaderRow = !block.hasHeaderRow; saveState(); renderEditor(); }));
-  controls.appendChild(btn(block.hasHeaderCol ? 'ヘッダー列: ON' : 'ヘッダー列: OFF', () => { block.hasHeaderCol = !block.hasHeaderCol; saveState(); renderEditor(); }));
+  controls.appendChild(btn(t('block.tableAddRow'), () => { block.rows++; block.cells.push(Array.from({length: block.cols}, () => '')); saveState(); renderEditor(); }));
+  controls.appendChild(btn(t('block.tableAddColumn'), () => { block.cols++; block.cells.forEach(row => row.push('')); saveState(); renderEditor(); }));
+  controls.appendChild(btn(t('block.tableRemoveRow'), () => { if (block.rows > 1) { block.rows--; block.cells.pop(); saveState(); renderEditor(); } }));
+  controls.appendChild(btn(t('block.tableRemoveColumn'), () => { if (block.cols > 1) { block.cols--; block.cells.forEach(row => row.pop()); saveState(); renderEditor(); } }));
+  controls.appendChild(btn(block.hasHeaderRow ? t('block.tableHeaderRowOn') : t('block.tableHeaderRowOff'), () => { block.hasHeaderRow = !block.hasHeaderRow; saveState(); renderEditor(); }));
+  controls.appendChild(btn(block.hasHeaderCol ? t('block.tableHeaderColumnOn') : t('block.tableHeaderColumnOff'), () => { block.hasHeaderCol = !block.hasHeaderCol; saveState(); renderEditor(); }));
   el.appendChild(controls);
 
   attachDropHandlers(el, block);
@@ -5520,17 +6381,17 @@ function renderImageBlock(block, el, parentList) {
     img.onerror = () => {
       wrap.innerHTML = '';
       const err = document.createElement('div'); err.className = 'image-empty';
-      err.style.color = 'var(--red)'; err.textContent = '画像の読み込みに失敗しました';
+      err.style.color = 'var(--red)'; err.textContent = t('block.imageLoadFailed');
       wrap.appendChild(err);
     };
     wrap.appendChild(img);
-    const replace = document.createElement('button'); replace.className = 'image-replace-btn'; replace.textContent = '変更';
+    const replace = document.createElement('button'); replace.className = 'image-replace-btn'; replace.textContent = t('block.imageReplace');
     replace.onclick = () => openImagePicker(block);
     wrap.appendChild(replace);
     el.appendChild(wrap);
 
     const cap = document.createElement('div'); cap.className = 'image-caption';
-    cap.contentEditable = 'true'; cap.dataset.placeholder = 'キャプション (任意)';
+    cap.contentEditable = 'true'; cap.dataset.placeholder = t('block.imageCaption');
     cap.innerHTML = block.caption || '';
     cap.addEventListener('input', () => { block.caption = cap.innerHTML; saveState(); });
     el.appendChild(cap);
@@ -5538,15 +6399,15 @@ function renderImageBlock(block, el, parentList) {
     const empty = document.createElement('div'); empty.className = 'image-empty';
     empty.setAttribute('role', 'button');
     empty.setAttribute('tabindex', '0');
-    empty.setAttribute('aria-label', '画像ファイルを選択');
+    empty.setAttribute('aria-label', t('block.selectImage'));
     empty.innerHTML = `
       <span class="material-symbols-outlined" aria-hidden="true">image</span>
       <div class="image-empty-body">
-        <div class="image-empty-title">画像を追加</div>
-        <div class="image-empty-sub">クリックで選択、またはここにドラッグ＆ドロップ</div>
+        <div class="image-empty-title">${escapeHTML(t('block.addImage'))}</div>
+        <div class="image-empty-sub">${escapeHTML(t('block.imageDropHint'))}</div>
         <div class="image-empty-actions">
-          <button class="image-action-btn" data-act="file">ファイルから選択</button>
-          <button class="image-action-btn" data-act="url">URLを入力</button>
+          <button class="image-action-btn" data-act="file">${escapeHTML(t('block.chooseFile'))}</button>
+          <button class="image-action-btn" data-act="url">${escapeHTML(t('block.enterUrl'))}</button>
         </div>
       </div>`;
 
@@ -5563,7 +6424,7 @@ function renderImageBlock(block, el, parentList) {
     };
 
     const triggerUrl = async () => {
-      const u = await showPrompt('画像のURLを入力してください', { title: '画像URL', placeholder: 'https://...', okText: '追加' });
+      const u = await showPrompt(t('block.imageUrlPrompt'), { title: t('block.imageUrlTitle'), placeholder: 'https://...', okText: t('block.add') });
       if (u && u.trim()) { block.url = u.trim(); saveState(); renderEditor(); }
     };
 
@@ -5621,7 +6482,7 @@ function collectPageHeadings(blocks, out = [], parents = []) {
       out.push({
         id: block.id,
         level,
-        text: getBlockPlainText(block) || '無題の見出し',
+        text: getBlockPlainText(block) || t('block.untitledHeading'),
         parents: parents.slice()
       });
     }
@@ -5691,7 +6552,7 @@ function renderTOCBlock(block, el, parentList) {
   const $title = document.createElement('div');
   $title.className = 'toc-block-title';
   $title.id = `toc-title-${block.id}`;
-  $title.textContent = '目次';
+  $title.textContent = t('block.toc');
   $kind.appendChild($icon);
   $kind.appendChild($title);
 
@@ -5705,11 +6566,11 @@ function renderTOCBlock(block, el, parentList) {
   if (!headings.length) {
     const $empty = document.createElement('div');
     $empty.className = 'toc-empty';
-    $empty.textContent = '見出しがありません';
+    $empty.textContent = t('block.tocEmpty');
     $wrap.appendChild($empty);
   } else {
     const $nav = document.createElement('nav');
-    $nav.setAttribute('aria-label', 'ページ内目次');
+    $nav.setAttribute('aria-label', t('block.tocAria'));
     const $list = document.createElement('ol');
     $list.className = 'toc-list';
     headings.forEach((heading) => {
@@ -5794,12 +6655,12 @@ function renderRawPreview(block, wrap) {
     preview.className = 'html-preview';
     const html = sanitizeHTML(block.content || '');
     if (html) preview.innerHTML = html;
-    else preview.textContent = 'HTML プレビュー';
+    else preview.textContent = t('block.htmlPreview');
     wrap.appendChild(preview);
   } else if (block.type === 'math') {
     const preview = document.createElement('pre');
     preview.className = 'mermaid-preview-fallback';
-    preview.textContent = block.content || '数式を入力';
+    preview.textContent = block.content || t('block.mathInput');
     wrap.appendChild(preview);
   } else if (block.type === 'mermaid') {
     const preview = document.createElement('div');
@@ -5824,7 +6685,7 @@ function _svgText(text, x, y, className, attrs = {}) {
 function _appendMermaidFallback($preview, source) {
   const $fallback = document.createElement('pre');
   $fallback.className = source ? 'mermaid-preview-fallback' : 'mermaid-preview-empty';
-  $fallback.textContent = source || 'Mermaid を入力';
+  $fallback.textContent = source || t('block.mermaidInput');
   $preview.appendChild($fallback);
 }
 
@@ -6400,12 +7261,12 @@ function renderFootnoteBlock(block, el, parentList) {
   header.className = 'raw-block-header';
   const kind = document.createElement('div');
   kind.className = 'raw-block-kind';
-  kind.textContent = '脚注';
+  kind.textContent = t('block.footnote');
   const labelInput = document.createElement('input');
   labelInput.className = 'raw-block-label-input';
   labelInput.value = block.label || '';
   labelInput.placeholder = 'label';
-  labelInput.setAttribute('aria-label', '脚注ラベル');
+  labelInput.setAttribute('aria-label', t('block.footnoteLabel'));
   labelInput.addEventListener('input', () => { block.label = labelInput.value; saveState(); });
   header.appendChild(kind);
   header.appendChild(labelInput);
@@ -6414,7 +7275,7 @@ function renderFootnoteBlock(block, el, parentList) {
   const input = document.createElement('textarea');
   input.className = 'raw-block-textarea';
   input.value = block.content || '';
-  input.setAttribute('aria-label', '脚注本文');
+  input.setAttribute('aria-label', t('block.footnoteBody'));
   input.addEventListener('input', () => { block.content = input.value; saveState(); });
   wrap.appendChild(input);
   el.appendChild(wrap);
@@ -6428,14 +7289,14 @@ function renderLinkReferenceBlock(block, el, parentList) {
   wrap.className = 'raw-block';
   const header = document.createElement('div');
   header.className = 'raw-block-header';
-  header.textContent = '参照リンク';
+  header.textContent = t('block.linkReference');
   wrap.appendChild(header);
   const fields = document.createElement('div');
   fields.className = 'raw-block-fields';
   const entries = [
-    ['label', 'ラベル', 'label'],
+    ['label', t('block.label'), 'label'],
     ['refUrl', 'URL', 'https://example.com'],
-    ['refTitle', 'タイトル', 'title']
+    ['refTitle', t('block.title'), 'title']
   ];
   entries.forEach(([key, aria, placeholder]) => {
     const input = document.createElement('input');
@@ -6465,7 +7326,7 @@ function renderDefinitionListBlock(block, el, parentList) {
     const dt = document.createElement('dt');
     dt.contentEditable = 'true';
     dt.innerHTML = item.term || '';
-    dt.dataset.placeholder = '用語';
+    dt.dataset.placeholder = t('block.term');
     dt.addEventListener('input', () => {
       item.term = dt.innerHTML;
       saveState();
@@ -6473,7 +7334,7 @@ function renderDefinitionListBlock(block, el, parentList) {
     const dd = document.createElement('dd');
     dd.contentEditable = 'true';
     dd.innerHTML = item.definition || '';
-    dd.dataset.placeholder = '定義';
+    dd.dataset.placeholder = t('block.definition');
     dd.addEventListener('input', () => {
       item.definition = dd.innerHTML;
       block.content = items.map((entry) => `${stripHTMLToText(entry.term)}: ${stripHTMLToText(entry.definition)}`).join('\n');
@@ -6687,11 +7548,11 @@ function _renderSpecColumns(block) {
   $header.className = 'spec-columns-header';
   const $title = document.createElement('div');
   $title.className = 'spec-columns-title';
-  $title.textContent = 'Columns';
+  $title.textContent = t('block.columns');
   const $add = document.createElement('button');
   $add.type = 'button';
   $add.className = 'spec-column-add';
-  $add.textContent = '+ Column';
+  $add.textContent = t('block.addColumn');
   $add.addEventListener('click', () => {
     block.columns.push({ name: '', type: '', key: '', nullable: 'No', description: '' });
     saveState();
@@ -6717,7 +7578,7 @@ function _renderSpecColumns(block) {
     const $remove = document.createElement('button');
     $remove.type = 'button';
     $remove.className = 'spec-column-remove';
-    $remove.textContent = '削除';
+    $remove.textContent = t('block.remove');
     $remove.disabled = block.columns.length <= 1;
     $remove.addEventListener('click', () => {
       if (block.columns.length <= 1) return;
@@ -6734,7 +7595,7 @@ function _renderSpecColumns(block) {
 async function loadImageFromFile(file, block) {
   // Size guard — warn if over 4MB (base64 bloats JSON heavily)
   if (file.size > 8 * 1024 * 1024) {
-    const ok = await showConfirm('画像サイズが8MBを超えています。保存データが大きくなります。続行しますか？', { title: '大きなファイル', okText: '続行', danger: true });
+    const ok = await showConfirm(t('dialog.largeFileMessage'), { title: t('dialog.largeFileTitle'), okText: t('dialog.continue'), danger: true });
     if (!ok) return;
   }
   const reader = new FileReader();
@@ -6743,20 +7604,20 @@ async function loadImageFromFile(file, block) {
     block.caption = block.caption || '';
     saveState(); renderEditor();
   };
-  reader.onerror = () => showAlert('ファイルの読み込みに失敗しました');
+  reader.onerror = () => showAlert(t('dialog.fileReadFailed'));
   reader.readAsDataURL(file);
 }
 
 async function openImagePicker(block) {
   // Re-open picker UI
   const items = [
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">upload_file</span>', label: 'ファイルから選択', fn: () => {
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">upload_file</span>', label: t('block.chooseFile'), fn: () => {
       const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
       input.onchange = () => { const f = input.files && input.files[0]; if (f) loadImageFromFile(f, block); };
       input.click();
     }},
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">link</span>', label: 'URLを入力', fn: async () => {
-      const u = await showPrompt('画像のURLを入力してください', { title: '画像URL', defaultValue: block.url && block.url.startsWith('data:') ? '' : block.url, placeholder: 'https://...' });
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">link</span>', label: t('block.enterUrl'), fn: async () => {
+      const u = await showPrompt(t('block.imageUrlPrompt'), { title: t('block.imageUrlTitle'), defaultValue: block.url && block.url.startsWith('data:') ? '' : block.url, placeholder: 'https://...' });
       if (u && u.trim()) { block.url = u.trim(); saveState(); renderEditor(); }
     }}
   ];
@@ -6776,7 +7637,7 @@ function renderToggleBlock(block, el, parentList) {
   chev.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>';
   const syncToggleButton = () => {
     chev.setAttribute('aria-expanded', String(!!block.expanded));
-    chev.setAttribute('aria-label', block.expanded ? 'トグルを折りたたむ' : 'トグルを展開');
+    chev.setAttribute('aria-label', block.expanded ? t('block.toggleCollapse') : t('block.toggleExpand'));
   };
   syncToggleButton();
   chev.onclick = (e) => {
@@ -6806,7 +7667,7 @@ function renderToggleBlock(block, el, parentList) {
   if (!block.children) block.children = [];
   if (block.children.length === 0) {
     const hint = document.createElement('button'); hint.type = 'button'; hint.className = 'toggle-empty-hint';
-    hint.textContent = '空のトグル。クリックで追加';
+    hint.textContent = t('block.emptyToggle');
     hint.onclick = () => {
       const nb = blk('text', ''); block.children.push(nb);
       saveState(); renderEditor(); setTimeout(() => focusBlock(nb.id), 0);
@@ -6837,8 +7698,8 @@ function renderInlineBlock(block, el, parentList) {
       const iconVal = block.emoji || '💡';
       const iconType = block.emojiType || 'emoji';
       emoji.innerHTML = renderIconHTML(iconVal, iconType, 22);
-      emoji.title = 'クリックでマーク変更';
-      emoji.setAttribute('aria-label', 'コールアウトアイコンを変更');
+      emoji.title = t('block.changeCalloutIconTitle');
+      emoji.setAttribute('aria-label', t('block.changeCalloutIcon'));
       emoji.onclick = (e) => {
         e.stopPropagation();
         showIconPicker(e, (picked, pType) => {
@@ -6898,21 +7759,23 @@ function updateBlockPlaceholderState($content) {
   const text = ($content.textContent || '').replace(/\u00a0/g, ' ').trim();
   const isEmpty = text.length === 0;
   $content.classList.toggle('is-empty', isEmpty);
-  if (isEmpty) $content.setAttribute('aria-label', $content.dataset.placeholder || '入力する');
+  if (isEmpty) $content.setAttribute('aria-label', $content.dataset.placeholder || t('block.input'));
   else $content.removeAttribute('aria-label');
 }
 
-function getPlaceholder(t) {
+function getPlaceholder(type) {
   return ({
-    text: '入力または「/」で見出し・リストなどを追加',
-    h1: '見出し 1', h2: '見出し 2', h3: '見出し 3',
-    h4: '見出し 4',
-    toggle_h1: 'トグル見出し 1', toggle_h2: 'トグル見出し 2', toggle_h3: 'トグル見出し 3',
-    quote: '引用を書く', bullet: 'リスト項目', numbered: 'リスト項目',
-    todo: 'ToDo', toggle: 'トグル', callout: 'コールアウトを書く',
-    requirement: GOVERNANCE_BLOCK_CONFIG.requirement.placeholder,
-    open_question: GOVERNANCE_BLOCK_CONFIG.open_question.placeholder
-  })[t] || '入力する';
+    text: t('block.placeholders.text'),
+    h1: t('block.placeholders.h1'), h2: t('block.placeholders.h2'), h3: t('block.placeholders.h3'),
+    h4: t('block.placeholders.h4'),
+    toggle_h1: t('block.placeholders.toggle_h1'), toggle_h2: t('block.placeholders.toggle_h2'), toggle_h3: t('block.placeholders.toggle_h3'),
+    quote: t('block.placeholders.quote'), bullet: t('block.placeholders.bullet'), numbered: t('block.placeholders.numbered'),
+    todo: t('block.placeholders.todo'), toggle: t('block.placeholders.toggle'), callout: t('block.placeholders.callout'),
+    decision: t('block.placeholders.decision'),
+    requirement: t('block.placeholders.requirement'),
+    open_question: t('block.placeholders.open_question'),
+    risk: t('block.placeholders.risk')
+  })[type] || t('block.input');
 }
 
 function updateNumberedList(container) {
@@ -7015,7 +7878,7 @@ function showSlashMenu(contentEl, block) {
   const items = filtered.map((t) => ({
     block: true,
     icon: `<span class="material-symbols-outlined" style="font-size:20px">${t.matIcon}</span>`,
-    label: t.name, desc: t.desc,
+    label: getBlockTypeName(t), desc: getBlockTypeDesc(t),
     fn: () => {
       contentEl.textContent = contentEl.textContent.replace(/^\/[^\n]*/, '');
       block.content = contentEl.innerHTML;
@@ -7282,17 +8145,17 @@ function showBlockContextMenu(e, block) {
   const cg = getBlockPickerTypes().map(t => ({
     block: true,
     icon: `<span class="material-symbols-outlined" style="font-size:20px">${t.matIcon}</span>`,
-    label: t.name, desc: t.desc, current: t.type === block.type, fn: () => convertBlockType(block, t.type)
+    label: getBlockTypeName(t), desc: getBlockTypeDesc(t), current: t.type === block.type, fn: () => convertBlockType(block, t.type)
   }));
   const items = [
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">content_copy</span>', label: '複製', fn: () => {
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">content_copy</span>', label: t('block.duplicate'), fn: () => {
       const c = JSON.parse(JSON.stringify(block)); c.id = uid();
       if (c.children) c.children = c.children.map(x => regenBlockIds(x));
       const found = findBlockAndList(block.id);
       insertBlockAfter(c, block.id, found ? found.list : null);
       renderEditor();
     } },
-    { icon: '<span class="material-symbols-outlined" aria-hidden="true">delete</span>', label: '削除', danger: true, fn: () => {
+    { icon: '<span class="material-symbols-outlined" aria-hidden="true">delete</span>', label: t('block.delete'), danger: true, fn: () => {
       const prev = deleteBlock(block.id); renderEditor();
       if (prev) setTimeout(() => focusBlock(prev.id, 'end'), 0);
     } },
@@ -7307,19 +8170,19 @@ let iconPickerCtx = null;
 
 // Keep the picker focused on icons that are useful for notes, tasks, and dashboards.
 const ICON_PICKER_EMOJI_CATEGORIES = {
-  'ノート': ['📄','📝','📌','📎','📁','📂','📊','📈','📅','📋','✅','🔖','💡','⭐','🎯','🚀','💼','📚','🔔','⚠️','❗','❓','🎉','🏠'],
-  'ステータス': ['✅','☑️','✔️','⏳','🔄','🔒','🔓','🔔','⚠️','❗','❓','💬','📣','📍','🧭'],
-  '仕事': ['💼','📊','📈','📉','🧾','💰','🏢','🤝','🗂','🗓','📦','🛠'],
-  '生活': ['🏠','🍽','☕','🛒','🚗','✈️','🌤','🌙','🎧','🎨','📷','🏃']
+  notes: ['📄','📝','📌','📎','📁','📂','📊','📈','📅','📋','✅','🔖','💡','⭐','🎯','🚀','💼','📚','🔔','⚠️','❗','❓','🎉','🏠'],
+  status: ['✅','☑️','✔️','⏳','🔄','🔒','🔓','🔔','⚠️','❗','❓','💬','📣','📍','🧭'],
+  work: ['💼','📊','📈','📉','🧾','💰','🏢','🤝','🗂','🗓','📦','🛠'],
+  life: ['🏠','🍽','☕','🛒','🚗','✈️','🌤','🌙','🎧','🎨','📷','🏃']
 };
 
 const ICON_PICKER_MATERIAL_CATEGORIES = {
-  'ノート棚': ['description','article','note','sticky_note_2','edit_note','text_snippet','summarize','library_books','menu_book','task_alt','assignment','checklist','receipt_long','folder','folder_open','bookmark','label','topic'],
-  '基本操作': ['search','settings','menu','add','edit','delete','save','download','upload','share','refresh','undo','redo','close','done','content_copy','link'],
-  '状態': ['check_circle','info','warning','error','help','notifications','visibility','lock','verified','flag','schedule','history'],
-  'ビジネス': ['work','business_center','analytics','bar_chart','trending_up','account_balance','payments','shopping_cart','storefront','badge'],
-  'メディア': ['image','photo_camera','palette','brush','movie','mic','headphones','play_circle'],
-  '開発': ['code','terminal','data_object','bug_report','hub','storage','dns']
+  notes: ['description','article','note','sticky_note_2','edit_note','text_snippet','summarize','library_books','menu_book','task_alt','assignment','checklist','receipt_long','folder','folder_open','bookmark','label','topic'],
+  operations: ['search','settings','menu','add','edit','delete','save','download','upload','share','refresh','undo','redo','close','done','content_copy','link'],
+  status: ['check_circle','info','warning','error','help','notifications','visibility','lock','verified','flag','schedule','history'],
+  business: ['work','business_center','analytics','bar_chart','trending_up','account_balance','payments','shopping_cart','storefront','badge'],
+  media: ['image','photo_camera','palette','brush','movie','mic','headphones','play_circle'],
+  development: ['code','terminal','data_object','bug_report','hub','storage','dns']
 };
 
 function _getMaterialCategoryEntries() {
@@ -7335,18 +8198,18 @@ function showIconPicker(e, onPick, options = {}) {
     picker.innerHTML = '';
     const tabs = document.createElement('div'); tabs.className = 'icon-picker-tabs';
     const eTab = document.createElement('button'); eTab.type = 'button'; eTab.className = 'icon-picker-tab' + (activeTab === 'emoji' ? ' active' : '');
-    eTab.textContent = '😀 絵文字'; eTab.onclick = () => { activeTab = 'emoji'; render(); };
+    eTab.textContent = `😀 ${t('iconPicker.emoji')}`; eTab.onclick = () => { activeTab = 'emoji'; render(); };
     const mTab = document.createElement('button'); mTab.type = 'button'; mTab.className = 'icon-picker-tab' + (activeTab === 'material' ? ' active' : '');
-    mTab.textContent = '⬡ アイコン'; mTab.onclick = () => { activeTab = 'material'; render(); };
+    mTab.textContent = `⬡ ${t('iconPicker.icon')}`; mTab.onclick = () => { activeTab = 'material'; render(); };
     tabs.appendChild(eTab); tabs.appendChild(mTab); picker.appendChild(tabs);
 
     const body = document.createElement('div'); body.className = 'icon-picker-body';
     const search = document.createElement('input'); search.className = 'icon-picker-search'; search.type = 'search';
-    search.placeholder = activeTab === 'emoji' ? '絵文字を検索（カテゴリ名）...' : 'アイコン名・カテゴリ名を検索...';
+    search.placeholder = activeTab === 'emoji' ? t('iconPicker.emojiSearch') : t('iconPicker.iconSearch');
     body.appendChild(search);
 
     const top = document.createElement('div'); top.className = 'icon-picker-top';
-    const randBtn = document.createElement('button'); randBtn.className = 'icon-picker-random'; randBtn.textContent = '🎲 ランダム';
+    const randBtn = document.createElement('button'); randBtn.className = 'icon-picker-random'; randBtn.textContent = `🎲 ${t('iconPicker.random')}`;
     randBtn.onclick = () => {
       if (activeTab === 'emoji') { const a = Object.values(ICON_PICKER_EMOJI_CATEGORIES).flat(); onPick(a[Math.floor(Math.random() * a.length)], 'emoji'); }
       else { const a = _getMaterialCategoryEntries().flatMap(([, icons]) => icons); onPick(a[Math.floor(Math.random() * a.length)], 'material'); }
@@ -7359,8 +8222,8 @@ function showIconPicker(e, onPick, options = {}) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'icon-picker-random';
       removeBtn.style.color = 'var(--red)';
-      removeBtn.textContent = '削除';
-      removeBtn.title = 'アイコンを削除';
+      removeBtn.textContent = t('iconPicker.remove');
+      removeBtn.title = t('iconPicker.removeTitle');
       removeBtn.onclick = () => { options.onRemove(); hideIconPicker(); };
       top.appendChild(removeBtn);
     }
@@ -7375,26 +8238,28 @@ function showIconPicker(e, onPick, options = {}) {
       const ql = (q || '').toLowerCase();
       if (activeTab === 'emoji') {
         Object.entries(ICON_PICKER_EMOJI_CATEGORIES).forEach(([cat, emojis]) => {
-          const catMatch = cat.toLowerCase().includes(ql);
+          const catLabel = t(`iconPicker.categories.${cat}`);
+          const catMatch = catLabel.toLowerCase().includes(ql) || cat.toLowerCase().includes(ql);
           if (ql && !catMatch) return;
-          const h = document.createElement('div'); h.className = 'icon-picker-category'; h.textContent = cat; grid.appendChild(h);
+          const h = document.createElement('div'); h.className = 'icon-picker-category'; h.textContent = catLabel; grid.appendChild(h);
           emojis.forEach(em => {
             const item = document.createElement('button'); item.type = 'button'; item.className = 'icon-picker-item emoji'; item.textContent = em;
-            item.setAttribute('aria-label', `${em} を選択`);
+            item.setAttribute('aria-label', t('iconPicker.choose', { name: em }));
             item.onclick = () => { onPick(em, 'emoji'); hideIconPicker(); };
             grid.appendChild(item);
           });
         });
       } else {
         _getMaterialCategoryEntries().forEach(([cat, icons]) => {
-          const catMatch = cat.toLowerCase().includes(ql);
+          const catLabel = t(`iconPicker.categories.${cat}`);
+          const catMatch = catLabel.toLowerCase().includes(ql) || cat.toLowerCase().includes(ql);
           const filtered = ql ? (catMatch ? icons : icons.filter(i => i.includes(ql))) : icons;
           if (!filtered.length) return;
-          const h = document.createElement('div'); h.className = 'icon-picker-category'; h.textContent = cat; grid.appendChild(h);
+          const h = document.createElement('div'); h.className = 'icon-picker-category'; h.textContent = catLabel; grid.appendChild(h);
           filtered.forEach(name => {
             const item = document.createElement('button'); item.type = 'button'; item.className = 'icon-picker-item mat-icon';
             item.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">${escapeHTML(name)}</span>`;
-            item.setAttribute('aria-label', `${name} を選択`);
+            item.setAttribute('aria-label', t('iconPicker.choose', { name }));
             item.title = name;
             item.onclick = () => { onPick(name, 'material'); hideIconPicker(); };
             grid.appendChild(item);
@@ -7606,10 +8471,10 @@ function formatTrashDate(ts) {
   const d = new Date(ts);
   const now = new Date();
   const diff = (now - d) / 1000;
-  if (diff < 60) return 'たった今';
-  if (diff < 3600) return Math.floor(diff / 60) + '分前';
-  if (diff < 86400) return Math.floor(diff / 3600) + '時間前';
-  if (diff < 86400 * 7) return Math.floor(diff / 86400) + '日前';
+  if (diff < 60) return t('trash.justNow');
+  if (diff < 3600) return t('trash.minutesAgo', { count: Math.floor(diff / 60) });
+  if (diff < 86400) return t('trash.hoursAgo', { count: Math.floor(diff / 3600) });
+  if (diff < 86400 * 7) return t('trash.daysAgo', { count: Math.floor(diff / 86400) });
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 function formatAutoPurgeTimestamp(ts) {
@@ -7635,12 +8500,12 @@ function renderTrashModal() {
   if (last && Number.isFinite(last.count) && last.count > 0) {
     const note = document.createElement('div');
     note.className = 'trash-auto-purge-note';
-    note.textContent = `直近の自動削除: ${last.count}件（保持${last.days}日 / ${formatAutoPurgeTimestamp(last.at)}）`;
+    note.textContent = t('trash.lastAutoPurge', { count: last.count, days: last.days, time: formatAutoPurgeTimestamp(last.at) });
     body.appendChild(note);
   }
   if (!roots.length) {
     const e = document.createElement('div'); e.className = 'trash-empty-state';
-    e.textContent = 'ゴミ箱は空です';
+    e.textContent = t('trash.empty');
     body.appendChild(e);
     return;
   }
@@ -7650,23 +8515,24 @@ function renderTrashModal() {
     const icon = document.createElement('div'); icon.className = 'trash-item-icon';
     icon.innerHTML = renderPageIconHTML(page, 18);
     const bodyEl = document.createElement('div'); bodyEl.className = 'trash-item-body';
-    const t = document.createElement('div'); t.className = 'trash-item-title'; t.textContent = page.title || '無題';
+    const titleEl = document.createElement('div'); titleEl.className = 'trash-item-title'; titleEl.textContent = page.title || t('common.untitled');
     const m = document.createElement('div'); m.className = 'trash-item-meta';
     const childCount = (page.children || []).filter(c => state.pages[c]).length;
-    let metaText = `${formatTrashDate(page.deletedAt)}に削除` + (childCount ? ` ・ ${childCount}個の子ノートを含む` : '');
+    const metaParts = [t('trash.deletedAt', { time: formatTrashDate(page.deletedAt) })];
+    if (childCount) metaParts.push(t('trash.includesChildren', { count: childCount }));
     if (days > 0 && page.deletedAt) {
       const remainMs = (page.deletedAt + days * 86400 * 1000) - Date.now();
       const remainDays = Math.max(0, Math.ceil(remainMs / 86400000));
-      metaText += ` ・ あと${remainDays}日で削除`;
+      metaParts.push(t('trash.remaining', { count: remainDays }));
     }
-    m.textContent = metaText;
-    bodyEl.appendChild(t); bodyEl.appendChild(m);
+    m.textContent = metaParts.join(' ・ ');
+    bodyEl.appendChild(titleEl); bodyEl.appendChild(m);
     const actions = document.createElement('div'); actions.className = 'trash-item-actions';
-    const restoreBtn = document.createElement('button'); restoreBtn.className = 'trash-action-btn'; restoreBtn.textContent = '復元';
+    const restoreBtn = document.createElement('button'); restoreBtn.className = 'trash-action-btn'; restoreBtn.textContent = t('trash.restore');
     restoreBtn.onclick = () => { restorePage(page.id); renderAll(); renderTrashModal(); };
-    const purgeBtn = document.createElement('button'); purgeBtn.className = 'trash-action-btn danger'; purgeBtn.textContent = '完全削除';
+    const purgeBtn = document.createElement('button'); purgeBtn.className = 'trash-action-btn danger'; purgeBtn.textContent = t('trash.purge');
     purgeBtn.onclick = async () => {
-      const ok = await showConfirm(`「${page.title || '無題'}」を完全に削除しますか？この操作は元に戻せません。`, { title: '完全削除', okText: '完全削除', danger: true });
+      const ok = await showConfirm(t('trash.purgeMessage', { title: page.title || t('common.untitled') }), { title: t('trash.purgeTitle'), okText: t('trash.purge'), danger: true });
       if (ok) { purgePage(page.id); renderAll(); renderTrashModal(); }
     };
     actions.appendChild(restoreBtn); actions.appendChild(purgeBtn);
@@ -7676,10 +8542,10 @@ function renderTrashModal() {
 }
 function notifyAutoPurgeResult(count, days, source) {
   if (!count) return;
-  const where = source === 'startup' ? '起動時' : 'ゴミ箱を開いたとき';
-  showAlert(`${where}に${count}件を自動で完全削除しました（保持期間: ${days}日）。`, {
-    title: 'ゴミ箱の自動削除',
-    okText: '確認'
+  const where = source === 'startup' ? t('trash.autoStartup') : t('trash.autoOpen');
+  showAlert(t('trash.autoMessage', { where, count, days }), {
+    title: t('trash.autoTitle'),
+    okText: t('trash.autoOk')
   });
 }
 function openTrashModal() {
@@ -7700,73 +8566,75 @@ $('#trash-retention-select').addEventListener('change', (e) => {
 $('#trash-empty-btn').addEventListener('click', async () => {
   const roots = listTrashRoots();
   if (!roots.length) return;
-  const ok = await showConfirm(`ゴミ箱内の${roots.length}件のノートをすべて完全に削除しますか？この操作は元に戻せません。`, { title: 'ゴミ箱を空にする', okText: '完全削除', danger: true });
+  const ok = await showConfirm(t('trash.emptyMessage', { count: roots.length }), { title: t('trash.emptyTitle'), okText: t('trash.purge'), danger: true });
   if (ok) { emptyTrash(); renderAll(); renderTrashModal(); }
 });
 
 /* ==================== Keyboard Shortcuts Cheat Sheet ==================== */
 const IS_MAC = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const MOD_LABEL = IS_MAC ? '⌘' : 'Ctrl';
-const SHORTCUTS_GROUPS = [
-  { title: '一般', items: [
-    { keys: [MOD_LABEL, 'K'], desc: 'ノート検索を開く', cmd: () => openSearchModal() },
-    { keys: [MOD_LABEL, '/'], desc: 'このショートカット一覧を表示' },
-    { keys: [MOD_LABEL, 'Z'], desc: '元に戻す', cmd: () => undo() },
-    { keys: [MOD_LABEL, 'Shift', 'Z'], desc: 'やり直し', cmd: () => redo() },
-    { keys: [MOD_LABEL, 'Y'], desc: 'やり直し', cmd: () => redo() },
-    { keys: ['Esc'], desc: 'モーダル / メニューを閉じる' },
-  ]},
-  { title: 'インライン書式', items: [
-    { keys: [MOD_LABEL, 'B'], desc: '太字' },
-    { keys: [MOD_LABEL, 'I'], desc: '斜体' },
-    { keys: [MOD_LABEL, 'U'], desc: '下線' },
-  ]},
-  { title: 'ブロック挿入（Markdownショートカット）', items: [
-    { keys: ['#', 'Space'], desc: '見出し1' },
-    { keys: ['##', 'Space'], desc: '見出し2' },
-    { keys: ['###', 'Space'], desc: '見出し3' },
-    { keys: ['-', 'Space'], desc: '箇条書き（* / + も可）' },
-    { keys: ['1.', 'Space'], desc: '番号付きリスト' },
-    { keys: ['[]', 'Space'], desc: 'To-do' },
-    { keys: ['>', 'Space'], desc: 'トグル' },
-    { keys: ['"', 'Space'], desc: '引用' },
-    { keys: ['```'], desc: 'コードブロック' },
-    { keys: ['---'], desc: '区切り線' },
-    { keys: ['/'], desc: 'ブロックメニュー（スラッシュコマンド）' },
-  ]},
-  { title: 'ブロック編集', items: [
-    { keys: ['Enter'], desc: '次のブロックを作成' },
-    { keys: ['Shift', 'Enter'], desc: 'ブロック内で改行' },
-    { keys: ['Backspace'], desc: '空ブロック削除 / 前ブロックへ結合' },
-    { keys: ['↑'], desc: '前のブロックへ移動（行頭時）' },
-    { keys: ['↓'], desc: '次のブロックへ移動（行末時）' },
-    { keys: [MOD_LABEL, 'A'], desc: 'ブロック全選択（複数選択モード）' },
-  ]},
-  { title: 'ブロック複数選択時', items: [
-    { keys: [MOD_LABEL, 'C'], desc: '選択ブロックをコピー' },
-    { keys: [MOD_LABEL, 'X'], desc: '選択ブロックをカット' },
-    { keys: ['Delete'], desc: '選択ブロックを削除' },
-    { keys: ['Esc'], desc: '選択を解除' },
-  ]},
-  { title: 'クイックアクション（クリックで実行）', items: [
-    { keys: ['→'], desc: '新しいノートを作成', cmd: () => createRootPageAndSwitch() },
-    { keys: ['→'], desc: 'テーマをカスタマイズ', cmd: () => openThemeCustomizer() },
-    { keys: ['→'], desc: 'ダークモードを切り替え', cmd: () => $('#theme-toggle').click() },
-    { keys: ['→'], desc: 'サイドバーを開閉', cmd: () => {
-      const sb = $('#sidebar');
-      setSidebarCollapsed(!sb.classList.contains('collapsed'));
-    }},
-    { keys: ['→'], desc: 'ゴミ箱を開く', cmd: () => openTrashModal() },
-    { keys: ['→'], desc: 'Markdown ファイルをインポート', cmd: () => importMarkdownAsNewPage() },
-    { keys: ['→'], desc: '現在のノートを Markdown でエクスポート', cmd: () => { const p = getCurrentPage(); if (p) exportPageAsMarkdown(p.id); } },
-    { keys: ['→'], desc: '保存', cmd: () => $('#export-btn').click() },
-  ]},
-];
+function getShortcutGroups() {
+  return [
+    { title: t('shortcuts.groups.general'), items: [
+      { keys: [MOD_LABEL, 'K'], desc: t('shortcuts.items.openSearch'), cmd: () => openSearchModal() },
+      { keys: [MOD_LABEL, '/'], desc: t('shortcuts.items.showShortcuts') },
+      { keys: [MOD_LABEL, 'Z'], desc: t('shortcuts.items.undo'), cmd: () => undo() },
+      { keys: [MOD_LABEL, 'Shift', 'Z'], desc: t('shortcuts.items.redo'), cmd: () => redo() },
+      { keys: [MOD_LABEL, 'Y'], desc: t('shortcuts.items.redo'), cmd: () => redo() },
+      { keys: ['Esc'], desc: t('shortcuts.items.closeModal') },
+    ]},
+    { title: t('shortcuts.groups.inline'), items: [
+      { keys: [MOD_LABEL, 'B'], desc: t('shortcuts.items.bold') },
+      { keys: [MOD_LABEL, 'I'], desc: t('shortcuts.items.italic') },
+      { keys: [MOD_LABEL, 'U'], desc: t('shortcuts.items.underline') },
+    ]},
+    { title: t('shortcuts.groups.insert'), items: [
+      { keys: ['#', 'Space'], desc: t('shortcuts.items.heading1') },
+      { keys: ['##', 'Space'], desc: t('shortcuts.items.heading2') },
+      { keys: ['###', 'Space'], desc: t('shortcuts.items.heading3') },
+      { keys: ['-', 'Space'], desc: t('shortcuts.items.bullet') },
+      { keys: ['1.', 'Space'], desc: t('shortcuts.items.numbered') },
+      { keys: ['[]', 'Space'], desc: t('shortcuts.items.todo') },
+      { keys: ['>', 'Space'], desc: t('shortcuts.items.toggle') },
+      { keys: ['"', 'Space'], desc: t('shortcuts.items.quote') },
+      { keys: ['```'], desc: t('shortcuts.items.code') },
+      { keys: ['---'], desc: t('shortcuts.items.divider') },
+      { keys: ['/'], desc: t('shortcuts.items.blockMenu') },
+    ]},
+    { title: t('shortcuts.groups.edit'), items: [
+      { keys: ['Enter'], desc: t('shortcuts.items.nextBlock') },
+      { keys: ['Shift', 'Enter'], desc: t('shortcuts.items.lineBreak') },
+      { keys: ['Backspace'], desc: t('shortcuts.items.backspace') },
+      { keys: ['↑'], desc: t('shortcuts.items.prevBlock') },
+      { keys: ['↓'], desc: t('shortcuts.items.nextBlockMove') },
+      { keys: [MOD_LABEL, 'A'], desc: t('shortcuts.items.selectAllBlocks') },
+    ]},
+    { title: t('shortcuts.groups.selection'), items: [
+      { keys: [MOD_LABEL, 'C'], desc: t('shortcuts.items.copyBlocks') },
+      { keys: [MOD_LABEL, 'X'], desc: t('shortcuts.items.cutBlocks') },
+      { keys: ['Delete'], desc: t('shortcuts.items.deleteBlocks') },
+      { keys: ['Esc'], desc: t('shortcuts.items.clearSelection') },
+    ]},
+    { title: t('shortcuts.groups.quick'), items: [
+      { keys: ['→'], desc: t('shortcuts.items.newNote'), cmd: () => createRootPageAndSwitch() },
+      { keys: ['→'], desc: t('shortcuts.items.customizeTheme'), cmd: () => openThemeCustomizer() },
+      { keys: ['→'], desc: t('shortcuts.items.toggleDarkMode'), cmd: () => $('#theme-toggle').click() },
+      { keys: ['→'], desc: t('shortcuts.items.toggleSidebar'), cmd: () => {
+        const sb = $('#sidebar');
+        setSidebarCollapsed(!sb.classList.contains('collapsed'));
+      }},
+      { keys: ['→'], desc: t('shortcuts.items.openTrash'), cmd: () => openTrashModal() },
+      { keys: ['→'], desc: t('shortcuts.items.importMarkdown'), cmd: () => importMarkdownAsNewPage() },
+      { keys: ['→'], desc: t('shortcuts.items.exportMarkdown'), cmd: () => { const p = getCurrentPage(); if (p) exportPageAsMarkdown(p.id); } },
+      { keys: ['→'], desc: t('shortcuts.items.save'), cmd: () => $('#export-btn').click() },
+    ]},
+  ];
+}
 
 function renderShortcutsModal() {
   const body = $('#shortcuts-body');
   body.innerHTML = '';
-  for (const grp of SHORTCUTS_GROUPS) {
+  for (const grp of getShortcutGroups()) {
     const g = document.createElement('div'); g.className = 'shortcuts-group';
     const t = document.createElement('div'); t.className = 'shortcuts-group-title'; t.textContent = grp.title;
     g.appendChild(t);
@@ -7783,7 +8651,7 @@ function renderShortcutsModal() {
       row.appendChild(desc); row.appendChild(keys);
       if (hasCommand) {
         row.classList.add('clickable');
-        row.title = 'クリックで実行';
+        row.title = t('shortcuts.run');
         row.addEventListener('click', () => {
           closeShortcutsModal();
           Promise.resolve().then(it.cmd);
@@ -7807,7 +8675,7 @@ $('#theme-toggle').addEventListener('click', () => { state.darkMode = !state.dar
 function applyTheme() {
   document.documentElement.dataset.theme = state.darkMode ? 'dark' : 'light';
   document.documentElement.style.colorScheme = state.darkMode ? 'dark' : 'light';
-  $('#theme-label').textContent = state.darkMode ? 'ライトモード' : 'ダークモード';
+  $('#theme-label').textContent = state.darkMode ? t('theme.lightMode') : t('theme.darkMode');
   const icon = $('#theme-icon');
   icon.textContent = state.darkMode ? 'light_mode' : 'dark_mode';
 }
@@ -7822,6 +8690,20 @@ const FONT_FAMILY_MAP = {
 };
 const ACCENT_PRESETS_LIGHT = ['#2fa36b', '#2563eb', '#0e7490', '#b45309', '#dc2626', '#7c3aed', '#475569'];
 const ACCENT_PRESETS_DARK  = ['#64d68f', '#7aa2ff', '#4fc3d6', '#f0a84b', '#ff8a80', '#b79cff', '#a8b0bc'];
+
+function setUiLanguage(value) {
+  const next = normalizeUiLanguage(value);
+  if (state.uiLanguage === next) return;
+  state.uiLanguage = next;
+  _localizeInitialWelcomePages(next);
+  applyLanguage();
+  renderAll();
+  if (!$('#theme-customizer-overlay').hidden) renderThemeCustomizer();
+  if (!$('#search-overlay').hidden) renderSearchResults(searchInput.value);
+  if (!$('#trash-overlay').hidden) renderTrashModal();
+  if (!$('#shortcuts-overlay').hidden) renderShortcutsModal();
+  saveState({ skipUndo: true, touchUpdatedAt: false });
+}
 
 function applyThemeCustom() {
   const tc = state.themeCustom || {};
@@ -7854,11 +8736,35 @@ function renderThemeCustomizer() {
   const presets = isDark ? ACCENT_PRESETS_DARK : ACCENT_PRESETS_LIGHT;
   const currentAccent = isDark ? (tc.accentDark || ACCENT_PRESETS_DARK[0]) : (tc.accent || ACCENT_PRESETS_LIGHT[0]);
 
+  // Section: Language
+  {
+    const sec = document.createElement('label'); sec.className = 'theme-section';
+    const title = document.createElement('div'); title.className = 'theme-section-title';
+    title.textContent = t('theme.language');
+    sec.appendChild(title);
+    const select = document.createElement('select');
+    select.id = 'ui-language-select';
+    select.style.width = '100%';
+    [
+      ['en', 'English'],
+      ['ja', '日本語']
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      select.appendChild(option);
+    });
+    select.value = normalizeUiLanguage(state.uiLanguage);
+    select.addEventListener('change', () => setUiLanguage(select.value));
+    sec.appendChild(select);
+    body.appendChild(sec);
+  }
+
   // Section: Accent
   {
     const sec = document.createElement('div'); sec.className = 'theme-section';
     const title = document.createElement('div'); title.className = 'theme-section-title';
-    title.textContent = `テーマカラー（${isDark ? 'ダーク' : 'ライト'}モード）`;
+    title.textContent = t('theme.accent', { mode: isDark ? t('theme.dark') : t('theme.light') });
     sec.appendChild(title);
     const row = document.createElement('div'); row.className = 'theme-color-row';
     const swatches = document.createElement('div'); swatches.className = 'theme-swatches';
@@ -7867,7 +8773,7 @@ function renderThemeCustomizer() {
       const isActive = c.toLowerCase() === currentAccent.toLowerCase();
       if (isActive) s.classList.add('active');
       s.title = c;
-      s.setAttribute('aria-label', `テーマカラー ${c} を選択`);
+      s.setAttribute('aria-label', t('theme.chooseAccent', { color: c }));
       s.setAttribute('aria-pressed', String(isActive));
       s.addEventListener('click', () => {
         if (isDark) tc.accentDark = c; else tc.accent = c;
@@ -7878,7 +8784,7 @@ function renderThemeCustomizer() {
     row.appendChild(swatches);
     const picker = document.createElement('input');
     picker.type = 'color'; picker.className = 'theme-color-picker'; picker.value = currentAccent;
-    picker.title = 'カスタムテーマカラー';
+    picker.title = t('theme.customAccent');
     picker.addEventListener('input', (e) => {
       const v = e.target.value;
       if (isDark) tc.accentDark = v; else tc.accent = v;
@@ -7893,10 +8799,10 @@ function renderThemeCustomizer() {
   // Section: Page Width
   {
     const sec = document.createElement('div'); sec.className = 'theme-section';
-    const title = document.createElement('div'); title.className = 'theme-section-title'; title.textContent = 'ノートの幅';
+    const title = document.createElement('div'); title.className = 'theme-section-title'; title.textContent = t('theme.noteWidth');
     sec.appendChild(title);
     const grp = document.createElement('div'); grp.className = 'theme-radio-group';
-    const opts = [['narrow','狭い','720'],['normal','標準','900'],['wide','広い','1100'],['full','フル','—']];
+    const opts = [['narrow', t('theme.widths.narrow'), '720'], ['normal', t('theme.widths.normal'), '900'], ['wide', t('theme.widths.wide'), '1100'], ['full', t('theme.widths.full'), '—']];
     const cur = tc.pageWidth || 'normal';
     for (const [val, label, sub] of opts) {
       const btn = document.createElement('button'); btn.className = 'theme-radio'; btn.type = 'button';
@@ -7911,14 +8817,14 @@ function renderThemeCustomizer() {
   // Section: Font Family
   {
     const sec = document.createElement('div'); sec.className = 'theme-section';
-    const title = document.createElement('div'); title.className = 'theme-section-title'; title.textContent = 'フォント';
+    const title = document.createElement('div'); title.className = 'theme-section-title'; title.textContent = t('theme.font');
     sec.appendChild(title);
     const grp = document.createElement('div'); grp.className = 'theme-radio-group';
     const opts = [
-      ['clarity', 'Noto Sans JP', 'Aaあ'],
-      ['rounded', 'Meiryo', 'Aaあ'],
-      ['editorial', 'Yu Mincho', 'Aaあ'],
-      ['code', 'Code Mono', 'Aaあ']
+      ['clarity', t('theme.fonts.clarity'), 'Aaあ'],
+      ['rounded', t('theme.fonts.rounded'), 'Aaあ'],
+      ['editorial', t('theme.fonts.editorial'), 'Aaあ'],
+      ['code', t('theme.fonts.code'), 'Aaあ']
     ];
     const cur = tc.fontFamily || 'clarity';
     for (const [val, label, sample] of opts) {
@@ -7939,14 +8845,14 @@ function renderThemeCustomizer() {
 function openThemeCustomizer() {
   if (!$('#theme-customizer-overlay').hidden) return;
   renderThemeCustomizer();
-  openOverlay($('#theme-customizer-overlay'), () => $('#theme-body button, #theme-body input'));
+  openOverlay($('#theme-customizer-overlay'), () => $('#theme-body select, #theme-body button, #theme-body input'));
 }
 function closeThemeCustomizer() { closeOverlay($('#theme-customizer-overlay')); }
 $('#theme-customizer-overlay').addEventListener('click', (e) => { if (e.target.id === 'theme-customizer-overlay') closeThemeCustomizer(); });
 $('#settings-btn').addEventListener('click', openThemeCustomizer);
 $('#theme-done-btn').addEventListener('click', closeThemeCustomizer);
 $('#theme-reset-btn').addEventListener('click', async () => {
-  const ok = await showConfirm('テーマをデフォルトに戻しますか？', { title: 'テーマのリセット', okText: 'リセット' });
+  const ok = await showConfirm(t('dialog.resetThemeMessage'), { title: t('dialog.resetThemeTitle'), okText: t('common.reset') });
   if (!ok) return;
   state.themeCustom = {};
   applyThemeCustom(); saveState(); closeThemeCustomizer();
@@ -7982,7 +8888,7 @@ function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error('画像の変換に失敗しました'));
+    reader.onerror = () => reject(reader.error || new Error(t('dialog.imageConvertFailed')));
     reader.readAsDataURL(blob);
   });
 }
@@ -7996,7 +8902,7 @@ async function inlineRemoteImagesForExport(s) {
       const res = await fetch(b.url, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
-      if (!blob.type || !blob.type.startsWith('image/')) throw new Error('image/* ではありません');
+      if (!blob.type || !blob.type.startsWith('image/')) throw new Error(t('dialog.imageTypeInvalid'));
       b.url = await blobToDataUrl(blob);
       converted++;
     } catch (e) {
@@ -8020,8 +8926,8 @@ $('#export-btn').addEventListener('click', async () => {
     const inlineResult = await inlineRemoteImagesForExport(exportState);
     if (inlineResult.failed.length) {
       const proceed = await showConfirm(
-        `${inlineResult.failed.length}件の外部画像を埋め込めませんでした。\nこのまま保存すると、共有先やオフラインでは表示が欠ける可能性があります。`,
-        { title: '外部画像の取り込み失敗', okText: 'そのまま保存', cancelText: 'キャンセル', danger: true }
+        t('dialog.externalImageFailedMessage', { count: inlineResult.failed.length }),
+        { title: t('dialog.externalImageFailedTitle'), okText: t('dialog.saveAnyway'), cancelText: t('common.cancel'), danger: true }
       );
       if (!proceed) return;
     }
@@ -8067,7 +8973,7 @@ $('#export-btn').addEventListener('click', async () => {
     a.click();
     URL.revokeObjectURL(url);
   } catch (err) {
-    showAlert('エクスポートに失敗しました: ' + err.message);
+    showAlert(t('dialog.saveFailed', { message: err.message }));
   }
 });
 
@@ -8139,7 +9045,7 @@ function highlightMatch(text, q) {
 
 function getPagePath(page) {
   const parts = []; let cur = page;
-  while (cur) { parts.unshift(cur.title || '無題'); cur = cur.parentId ? state.pages[cur.parentId] : null; }
+  while (cur) { parts.unshift(cur.title || t('common.untitled')); cur = cur.parentId ? state.pages[cur.parentId] : null; }
   return parts.join(' / ');
 }
 
@@ -8166,23 +9072,23 @@ function renderSearchResults(q) {
   }
 
   const h = document.createElement('div'); h.className = 'search-section';
-  h.textContent = ql ? `ノート (${pageMatches.length})` : '最近のノート';
+  h.textContent = ql ? t('search.notesCount', { count: pageMatches.length }) : t('search.recent');
   searchResults.appendChild(h);
 
   if (!pageMatches.length && ql) {
     const empty = document.createElement('div'); empty.className = 'search-empty';
-    empty.innerHTML = `結果がありません<br><small>Enter で「${escapeHTML(q)}」を新しいノートとして作成</small>`;
+    empty.innerHTML = `${escapeHTML(t('search.noResults'))}<br><small>${escapeHTML(t('search.createHint', { query: q }))}</small>`;
     searchResults.appendChild(empty);
   }
 
   pageMatches.forEach((p) => {
     const item = document.createElement('button'); item.type = 'button'; item.className = 'search-item';
-    item.setAttribute('aria-label', `${p.title || '無題'}を開く`);
+    item.setAttribute('aria-label', t('common.openNote', { title: p.title || t('common.untitled') }));
     const icon = document.createElement('div'); icon.className = 'search-item-icon';
     icon.innerHTML = renderPageIconHTML(p, 18);
     const body = document.createElement('div'); body.className = 'search-item-body';
     const title = document.createElement('div'); title.className = 'search-item-title';
-    title.innerHTML = highlightMatch(p.title || '無題', ql);
+    title.innerHTML = highlightMatch(p.title || t('common.untitled'), ql);
     const path = document.createElement('div'); path.className = 'search-item-path';
     path.textContent = getPagePath(p);
     body.appendChild(title); body.appendChild(path);
@@ -8195,8 +9101,8 @@ function renderSearchResults(q) {
 
   if (ql) {
     const createItem = document.createElement('button'); createItem.type = 'button'; createItem.className = 'search-item';
-    createItem.setAttribute('aria-label', `${q}を新しいノートとして作成`);
-    createItem.innerHTML = `<div class="search-item-icon"><span class="material-symbols-outlined" aria-hidden="true">add</span></div><div class="search-item-body"><div class="search-item-title">「${escapeHTML(q)}」を新しいノートとして作成</div></div>`;
+    createItem.setAttribute('aria-label', t('search.createAria', { query: q }));
+    createItem.innerHTML = `<div class="search-item-icon"><span class="material-symbols-outlined" aria-hidden="true">add</span></div><div class="search-item-body"><div class="search-item-title">${escapeHTML(t('search.createTitle', { query: q }))}</div></div>`;
     createItem.onclick = () => { closeSearchModal(); const p = createPage(null, { title: q }); switchPage(p.id); };
     createItem.onmouseenter = () => { searchItems.forEach(i => i.classList.remove('selected')); createItem.classList.add('selected'); searchSelectedIdx = searchItems.indexOf(createItem); };
     searchResults.appendChild(createItem);
@@ -8635,10 +9541,13 @@ function renderAll() {
   // Sanitize all string content in state to neutralize injected HTML from
   // shared / tampered embedded-state or stored data (defense in depth).
   sanitizeStateInPlace(state);
+  const localizedWelcomeOnStartup = _localizeInitialWelcomePages(state.uiLanguage);
 
   _lastPersistedStateJSON = JSON.stringify(state);
   // Run auto-purge on startup so expired trash is cleaned up before render.
   const purgedOnStartup = autoPurgeTrash();
+
+  applyLanguage();
 
   // Wire up editable document name
   const $documentName = document.getElementById('document-name');
@@ -8662,11 +9571,11 @@ function renderAll() {
   applyThemeCustom();
   renderAll();
   _focusInitialBlockIfEmptyPage(state.currentPageId);
-  if (purgedOnStartup > 0 || normalized.repaired) _doSave();
+  if (purgedOnStartup > 0 || normalized.repaired || localizedWelcomeOnStartup) _doSave();
   if (normalized.repaired) {
-    await showAlert('保存データに不整合があったため、安全に起動できる形へ補正しました。', {
-      title: 'データを補正しました',
-      okText: '確認'
+    await showAlert(t('dialog.repairMessage'), {
+      title: t('dialog.repairTitle'),
+      okText: t('common.ok')
     });
   }
   notifyAutoPurgeResult(purgedOnStartup, +state.trashAutoPurgeDays || 0, 'startup');

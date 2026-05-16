@@ -3,12 +3,25 @@
 ![日本語: Current](https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-Current-2ea44f)
 [![English: Click to View](https://img.shields.io/badge/English-Click%20to%20View-64748b)](./README.en.md)
 
+![Local First](https://img.shields.io/badge/local--first-yes-2ea44f)
+![Single File](https://img.shields.io/badge/single--file-HTML-f97316)
+![No Build](https://img.shields.io/badge/build-none-64748b)
+![Markdown](https://img.shields.io/badge/Markdown-supported-0f766e)
+![Mermaid](https://img.shields.io/badge/Mermaid-supported-2563eb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 LeafNote は、思考をクラウドに預けず、自分の手元で育てるためのローカルファーストなノートです。
 
 軽いメモ、設計の下書き、調査ログ、タスク、コード、表、画像、Mermaid 図。
 散らばりがちな作業の断片を、1つの場所に静かに集めて、あとから読み返せる形に整えてくれます。
 
 派手な同期機能やアカウント連携よりも、「すぐ書ける」「手元に残る」「Markdown として外へ出せる」ことを大切にしたノートです。
+
+## UI 言語を選べる
+
+LeafNote の UI は英語をデフォルトにしつつ、設定モーダルから English / 日本語 を選べます。
+選んだ言語は IndexedDB に保存されるため、次回起動時も同じ表示で再開できます。
+未編集の初期ウェルカムノートも、選んだ UI 言語に合わせて英語 / 日本語に切り替わります。
 
 ## 書くことに集中できる
 
