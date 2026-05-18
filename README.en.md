@@ -3,6 +3,13 @@
 [![日本語: Click to View](https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-Click%20to%20View-64748b)](./README.md)
 ![English: Current](https://img.shields.io/badge/English-Current-2ea44f)
 
+![Local First](https://img.shields.io/badge/local--first-yes-2ea44f)
+![Single File](https://img.shields.io/badge/single--file-HTML-f97316)
+![No Build](https://img.shields.io/badge/build-none-64748b)
+![Markdown](https://img.shields.io/badge/Markdown-supported-0f766e)
+![Mermaid](https://img.shields.io/badge/Mermaid-supported-2563eb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 LeafNote is a local-first notebook for growing your thoughts on your own machine instead of sending them to the cloud.
 
 Quick notes, design drafts, research logs, tasks, code, tables, images, and Mermaid diagrams.
@@ -36,6 +43,7 @@ That alone makes daily notes easier to keep.
 
 LeafNote is more than a plain text box.
 You can structure your thoughts with headings, lists, todos, quotes, code, tables, images, and callouts.
+When you paste or drag and drop image files into the editor, LeafNote adds them as image blocks automatically.
 
 It also supports Mermaid diagrams, so flows, states, relationships, schedules, and other ideas that are hard to express in prose can stay in the same note.
 It works well for engineering specs, personal project planning, and organizing research.
