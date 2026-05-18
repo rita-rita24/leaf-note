@@ -3,13 +3,6 @@
 ![日本語: Current](https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-Current-2ea44f)
 [![English: Click to View](https://img.shields.io/badge/English-Click%20to%20View-64748b)](./README.en.md)
 
-![Local First](https://img.shields.io/badge/local--first-yes-2ea44f)
-![Single File](https://img.shields.io/badge/single--file-HTML-f97316)
-![No Build](https://img.shields.io/badge/build-none-64748b)
-![Markdown](https://img.shields.io/badge/Markdown-supported-0f766e)
-![Mermaid](https://img.shields.io/badge/Mermaid-supported-2563eb)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-
 LeafNote は、思考をクラウドに預けず、自分の手元で育てるためのローカルファーストなノートです。
 
 軽いメモ、設計の下書き、調査ログ、タスク、コード、表、画像、Mermaid 図。
