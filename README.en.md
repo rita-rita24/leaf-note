@@ -5,7 +5,7 @@
 
 LeafNote is a local-first notebook for growing your thoughts on your own machine instead of sending them to the cloud.
 
-Quick notes, design drafts, research logs, tasks, code, tables, images, and Mermaid diagrams.
+Quick notes, design drafts, research logs, tasks, code, tables, images, attachments, and Mermaid diagrams.
 It gathers scattered working fragments into one quiet place and helps shape them into something you can revisit later.
 
 Rather than flashy sync features or account integrations, LeafNote focuses on being fast to open, keeping your notes close at hand, and letting you export them as Markdown.
@@ -35,8 +35,9 @@ That alone makes daily notes easier to keep.
 ## Strong for design notes
 
 LeafNote is more than a plain text box.
-You can structure your thoughts with headings, lists, todos, quotes, code, tables, images, and callouts.
+You can structure your thoughts with headings, lists, todos, quotes, code, tables, images, attachments, and callouts.
 When you paste or drag and drop image files into the editor, LeafNote adds them as image blocks automatically.
+Text, Excel, and other files can be saved as file blocks and downloaded later.
 
 It also supports Mermaid diagrams, so flows, states, relationships, schedules, and other ideas that are hard to express in prose can stay in the same note.
 It works well for engineering specs, personal project planning, and organizing research.
@@ -64,7 +65,7 @@ That room to grow helps daily notes become your own knowledge base over time.
 - People who want to keep personal development, design, study, and research notes locally
 - People who hesitate to put early-stage thoughts in the cloud
 - People who like portable, single-file workspaces
-- People who want diagrams, code, tables, and tasks in the same context
+- People who want diagrams, code, tables, tasks, and attachments in the same context
 
 ## What LeafNote aims to be
 
