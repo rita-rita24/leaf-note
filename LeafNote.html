@@ -9527,7 +9527,7 @@ syncSidebarViewportMode();
 
 /* ==================== Sidebar resize ==================== */
 const SIDEBAR_WIDTH_KEY = 'leafnote_sidebar_width';
-const SIDEBAR_MIN = 200, SIDEBAR_MAX = 480, SIDEBAR_DEFAULT = 260;
+const SIDEBAR_MIN = 180, SIDEBAR_MAX = 480, SIDEBAR_DEFAULT = 260;
 function applySidebarWidth(px) {
   const w = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(px)));
   document.documentElement.style.setProperty('--sidebar-width', w + 'px');
