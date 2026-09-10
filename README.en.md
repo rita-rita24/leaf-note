@@ -10,6 +10,18 @@ It gathers scattered working fragments into one quiet place and helps shape them
 
 Rather than flashy sync features or account integrations, LeafNote focuses on being fast to open, keeping your notes close at hand, and letting you export them as Markdown.
 
+## Get started and keep a backup
+
+1. Select **Download LeafNote.html** on the [download page](./index.html), or open `LeafNote.html` from this repository.
+2. Open the file in a desktop browser and select **New note** to start writing. Choose your UI language in **Settings**.
+3. Use **Save** in the sidebar to download an HTML file containing your notes. Open that file in a browser to load the embedded notes.
+
+Autosave stores your work in the current browser. It does not update the original HTML file or sync to another device. Clearing browser data or closing a private session can remove that saved data, so keep HTML backups of important work.
+
+If a save conflict is reported, use **Save** to download this tab's contents as HTML before reloading. Changes from other tabs or documents are not merged automatically.
+
+Use **Import Markdown** in the sidebar to add existing notes. **Help & shortcuts** provides access to import, export, and editing actions.
+
 ## Choose your UI language
 
 LeafNote uses English as the default UI language, and the settings modal lets you choose English or 日本語.

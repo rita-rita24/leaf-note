@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Maskinger is a local-only masking and restore tool for code, SQL, logs, settings, and business text.">
+<meta name="theme-color" content="#f7f8f5">
+<link rel="icon" type="image/png" sizes="128x128" href="data:image/png;base64,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">
+<title>Maskinger</title>
+<style>
+  @layer reset, base, component, utility;
+
+  @layer reset {
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    textarea {
+      border: 0;
+      resize: vertical;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+  }
+
+  @layer base {
+    :root {
+      color-scheme: light;
+      --ln-primary: oklch(0.66 0.16 151);
+      --ln-primary-hover: color-mix(in oklch, var(--ln-primary) 84%, black);
+      --ln-primary-soft: color-mix(in oklch, var(--ln-primary) 18%, white);
+      --ln-primary-faint: color-mix(in oklch, var(--ln-primary) 7%, white);
+      --ln-focus-ring: color-mix(in oklch, var(--ln-primary) 24%, transparent);
+      --ln-bg: oklch(0.99 0.004 170);
+      --ln-bg-soft: oklch(0.97 0.006 200);
+      --ln-surface: oklch(1 0 0);
+      --ln-header-bg: oklch(0.96 0.006 200);
+      --ln-border: oklch(0.89 0.011 210);
+      --ln-border-strong: oklch(0.78 0.018 210);
+      --ln-text: oklch(0.25 0.018 210);
+      --ln-text-muted: oklch(0.48 0.018 210);
+      --ln-text-tertiary: oklch(0.54 0.016 210);
+      --ln-text-on-primary: oklch(1 0 0);
+      --ln-color-danger: oklch(0.58 0.18 29);
+      --ln-color-danger-hover: oklch(0.52 0.18 29);
+      --ln-color-danger-soft: oklch(0.95 0.04 29);
+      --ln-color-warning: oklch(0.72 0.13 76);
+      --ln-radius-sm: 4px;
+      --ln-radius-md: 6px;
+      --ln-radius-lg: 8px;
+      --ln-radius-pill: 9999px;
+      --ln-space-2: 4px;
+      --ln-space-3: 6px;
+      --ln-space-4: 8px;
+      --ln-space-5: 12px;
+      --ln-space-6: 16px;
+      --ln-space-7: 20px;
+      --ln-space-8: 24px;
+      --ln-control-btn-min-block-size: 30px;
+      --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      --font-family-mono: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      --page-max-width: 1360px;
+      --bg-app: var(--ln-bg);
+      --bg-main: var(--ln-bg);
+      --bg-hover: var(--ln-primary-faint);
+      --bg-hover-strong: var(--ln-primary-soft);
+      --bg-code: var(--ln-header-bg);
+      --bg-overlay: oklch(0 0 0 / 0.5);
+      --border: var(--ln-border);
+      --border-strong: var(--ln-border-strong);
+      --text-primary: var(--ln-text);
+      --text-secondary: var(--ln-text-muted);
+      --text-tertiary: var(--ln-text-tertiary);
+      --accent: var(--ln-primary);
+      --accent-soft: var(--ln-primary-soft);
+      --shadow-menu: 0 0 0 1px oklch(0 0 0 / 0.06), 0 8px 24px oklch(0 0 0 / 0.14);
+      --shadow-modal: 0 20px 60px oklch(0 0 0 / 0.3);
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ln-primary: oklch(0.72 0.14 151);
+      --ln-primary-hover: color-mix(in oklch, var(--ln-primary) 86%, white);
+      --ln-primary-soft: color-mix(in oklch, var(--ln-primary) 30%, black);
+      --ln-primary-faint: color-mix(in oklch, var(--ln-primary) 17%, var(--ln-surface));
+      --ln-focus-ring: color-mix(in oklch, var(--ln-primary) 28%, transparent);
+      --ln-bg: oklch(0.18 0.008 210);
+      --ln-bg-soft: oklch(0.22 0.01 210);
+      --ln-surface: oklch(0.21 0.01 210);
+      --ln-header-bg: oklch(0.26 0.012 210);
+      --ln-border: oklch(0.35 0.014 210);
+      --ln-border-strong: oklch(0.45 0.016 210);
+      --ln-text: oklch(0.9 0.006 210);
+      --ln-text-muted: oklch(0.68 0.01 210);
+      --ln-text-tertiary: oklch(0.64 0.011 210);
+      --ln-color-danger: oklch(0.68 0.18 29);
+      --ln-color-danger-hover: oklch(0.74 0.17 29);
+      --ln-color-danger-soft: oklch(0.29 0.06 29);
+      --ln-color-warning: oklch(0.79 0.12 76);
+      --bg-main: oklch(0.23 0.008 210);
+      --bg-overlay: oklch(0 0 0 / 0.58);
+      --shadow-menu: 0 0 0 1px oklch(0 0 0 / 0.24), 0 8px 24px oklch(0 0 0 / 0.36);
+      --shadow-modal: 0 20px 60px oklch(0 0 0 / 0.42);
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font-family-base);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      background: var(--bg-app);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    ::selection {
+      background: color-mix(in oklch, var(--ln-primary) 26%, transparent);
+    }
+
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--ln-border-strong);
+      border-radius: var(--ln-radius-pill);
+      border: 3px solid transparent;
+      background-clip: padding-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--ln-primary);
+      border: 3px solid transparent;
+      background-clip: padding-box;
+    }
+  }
+
+  @layer component {
+    .cl-root {
+      min-height: 100%;
+      background: var(--ln-bg);
+    }
+
+    .app {
+      height: 100dvh;
+    }
+
+    button:focus-visible,
+    textarea:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--ln-focus-ring);
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-main);
+      height: 100%;
+    }
+
+    .editor-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .page-container {
+      max-width: var(--page-max-width);
+      margin: 0 auto;
+      padding: 20px 48px 18vh;
+      position: relative;
+    }
+
+    .note-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--ln-space-4);
+      padding: 6px 2px;
+      border-radius: var(--ln-radius-md);
+      margin-bottom: var(--ln-space-4);
+    }
+
+    .page-title-wrapper {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 1.22rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .header-action {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      color: var(--text-tertiary);
+      background: var(--ln-surface);
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .header-action:hover {
+      border-color: color-mix(in oklch, var(--ln-color-danger) 34%, var(--border));
+      background: var(--ln-color-danger-soft);
+      color: var(--ln-color-danger);
+    }
+
+    .panel-action {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: var(--text-tertiary);
+      font-size: 0.82rem;
+    }
+
+    .panel-action:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .work-panel,
+    .mapping-section {
+      border: 1px solid var(--ln-block-border, var(--border));
+      border-radius: var(--ln-radius-lg);
+      background: var(--ln-surface);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .panel-header,
+    .mapping-header {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 10px;
+      background: var(--ln-header-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title,
+    .mapping-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .step-badge {
+      inline-size: 22px;
+      block-size: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--ln-radius-md);
+      background: var(--ln-primary-faint);
+      color: var(--ln-primary);
+      font-size: 0.76rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .panel-body {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .panel-body.split {
+      grid-template-rows: minmax(160px, 1fr) minmax(160px, 1fr);
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--text-tertiary);
+      font-size: 0.75rem;
+      font-weight: 650;
+    }
+
+    .text-shell {
+      min-height: 320px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 6px;
+    }
+
+    .text-shell.compact {
+      min-height: 156px;
+    }
+
+    .editor-textarea {
+      width: 100%;
+      min-height: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--ln-radius-md);
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 10px 11px;
+      font-family: var(--font-family-mono);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      tab-size: 2;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    .editor-textarea::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .editor-textarea[readonly] {
+      cursor: text;
+    }
+
+    .mapping-section {
+      margin-top: 12px;
+    }
+
+    .mapping-body {
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    .mapping-table {
+      font-size: 0.79rem;
+      table-layout: fixed;
+    }
+
+    .mapping-table th,
+    .mapping-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .mapping-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: color-mix(in oklch, var(--ln-header-bg) 86%, var(--ln-surface));
+      color: var(--text-tertiary);
+      font-size: 0.72rem;
+      font-weight: 750;
+    }
+
+    .mapping-table code {
+      font-family: var(--font-family-mono);
+      font-size: 0.78rem;
+      overflow-wrap: anywhere;
+    }
+
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      border-radius: var(--ln-radius-pill);
+      padding: 1px 7px;
+      background: var(--ln-primary-faint);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .original-cell {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--text-secondary);
+    }
+
+    .original-cell.is-hidden {
+      color: transparent;
+      text-shadow: 0 0 8px color-mix(in oklch, var(--text-secondary) 72%, transparent);
+      user-select: none;
+    }
+
+    .empty-row {
+      color: var(--text-tertiary);
+      text-align: center;
+      padding: 24px 10px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 10px 12px;
+      border-radius: var(--ln-radius-lg);
+      background: var(--ln-surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-menu);
+      font-size: 0.82rem;
+    }
+
+    .toast[hidden] {
+      display: none;
+    }
+
+    @media (max-width: 1100px) {
+      .steps-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .text-shell {
+        min-height: 260px;
+      }
+
+      .panel-body.split {
+        grid-template-rows: minmax(180px, auto) minmax(180px, auto);
+      }
+    }
+
+    @media (max-width: 768px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        min-height: 100dvh;
+        height: auto;
+      }
+
+      .page-container {
+        padding: 16px 16px 80px;
+      }
+
+      .note-heading {
+        padding-inline: 0;
+      }
+
+      .header-action {
+        padding-inline: 8px;
+      }
+
+      .page-title {
+        font-size: 1.14rem;
+      }
+
+      .mapping-table {
+        min-width: 720px;
+      }
+    }
+  }
+
+  @layer utility {
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .mono {
+      font-family: var(--font-family-mono);
+    }
+  }
+</style>
+</head>
+<body class="cl-root">
+<div class="app">
+  <main class="main">
+    <div class="editor-scroll">
+      <div class="page-container">
+        <div class="note-heading">
+          <div class="page-title-wrapper">
+            <h1 class="page-title">Maskinger</h1>
+          </div>
+          <div class="header-actions">
+            <button class="header-action" id="clear-all-btn" type="button">全てクリア</button>
+          </div>
+        </div>
+
+        <section class="steps-grid" aria-label="Mask and restore workspace">
+          <article class="work-panel">
+            <header class="panel-header">
+              <div class="panel-title"><span class="step-badge">1</span><span>マスク前</span></div>
+              <div class="panel-actions">
+                <button class="panel-action" id="clear-source-btn" type="button">消去</button>
+              </div>
+            </header>
+            <div class="panel-body">
+              <label class="text-shell" for="source-input">
+                <span class="field-label">貼り付ける値</span>
+                <textarea class="editor-textarea" id="source-input" spellcheck="false" placeholder="コード、SQL、ログ、設定値、業務テキストを貼り付け"></textarea>
+              </label>
+            </div>
+          </article>
+
+          <article class="work-panel">
+            <header class="panel-header">
+              <div class="panel-title"><span class="step-badge">2</span><span>マスク後</span></div>
+              <div class="panel-actions">
+                <button class="panel-action" id="copy-masked-btn" type="button">コピー</button>
+              </div>
+            </header>
+            <div class="panel-body">
+              <label class="text-shell" for="masked-output">
+                <span class="field-label">マスク済みテキスト</span>
+                <textarea class="editor-textarea" id="masked-output" spellcheck="false" readonly placeholder="マスク済みテキストがここに表示されます"></textarea>
+              </label>
+            </div>
+          </article>
+
+          <article class="work-panel">
+            <header class="panel-header">
+              <div class="panel-title"><span class="step-badge">3</span><span>マスク復元</span></div>
+              <div class="panel-actions">
+                <button class="panel-action" id="copy-restored-btn" type="button">コピー</button>
+              </div>
+            </header>
+            <div class="panel-body split">
+              <label class="text-shell compact" for="restore-input">
+                <span class="field-label">復元前</span>
+                <textarea class="editor-textarea" id="restore-input" spellcheck="false" placeholder="MASK_*_0001 形式が残った文章を貼り付け"></textarea>
+              </label>
+              <label class="text-shell compact" for="restore-output">
+                <span class="field-label">復元結果</span>
+                <textarea class="editor-textarea" id="restore-output" spellcheck="false" readonly placeholder="対応表から復元した結果がここに表示されます"></textarea>
+              </label>
+            </div>
+          </article>
+        </section>
+
+        <section class="mapping-section" aria-label="Placeholder mappings">
+          <header class="mapping-header">
+            <div class="mapping-title"><span class="step-badge">Map</span><span>対応表</span></div>
+            <div class="panel-actions">
+              <button class="panel-action" id="discard-map-btn" type="button">対応表だけ破棄</button>
+            </div>
+          </header>
+          <div class="mapping-body">
+            <table class="mapping-table">
+              <thead>
+                <tr>
+                  <th style="width: 34%">プレースホルダー</th>
+                  <th style="width: 16%">種類</th>
+                  <th>元値</th>
+                </tr>
+              </thead>
+              <tbody id="mapping-body">
+                <tr><td class="empty-row" colspan="3">まだ対応表はありません。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'maskinger.activeMappings.v2';
+  const PLACEHOLDER_RE = /MASK_[A-Z0-9]+(?:_[A-Z0-9]+)*_\d{4,}/g;
+  const PLACEHOLDER_VALUE_RE = /^MASK_[A-Z0-9]+(?:_[A-Z0-9]+)*_\d{4,}$/;
+  const RESTORE_RE = /\[(MASK_[A-Z0-9]+(?:_[A-Z0-9]+)*_\d{4,}|[A-Z0-9]+(?:_[A-Z0-9]+)*_\d{4,})\]|MASK_[A-Z0-9]+(?:_[A-Z0-9]+)*_\d{4,}/g;
+  const MASKINGER_INPUT_MAX_BYTES = 1024 * 1024;
+  const MASKINGER_INPUT_MAX_LINES = 5000;
+  const MASKINGER_MAX_MAPPINGS = 1000;
+  const MASKINGER_MAPPING_RENDER_MAX_ROWS = 200;
+  const MASKINGER_MAPPING_ORIGINAL_MAX_BYTES = 16 * 1024;
+  const MASKINGER_STORAGE_MAX_BYTES = 2 * 1024 * 1024;
+
+  const _state = {
+    _counterByType: new Map(),
+    _mappings: [],
+    _placeholderByKey: new Map()
+  };
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+
+  const $sourceInput = $('#source-input');
+  const $maskedOutput = $('#masked-output');
+  const $restoreInput = $('#restore-input');
+  const $restoreOutput = $('#restore-output');
+  const $modeLabel = $('#mode-label');
+  const $mappingCount = $('#mapping-count');
+  const $restoredCount = $('#restored-count');
+  const $unresolvedCount = $('#unresolved-count');
+  const $mappingBody = $('#mapping-body');
+  const $toast = $('#toast');
+
+  let _hideOriginals = false;
+  let _toastTimer = 0;
+  let _lastAcceptedSourceValue = '';
+  let _lastAcceptedRestoreValue = '';
+  let _mappingSaveDepth = 0;
+  let _pendingMappingSave = false;
+  const _copyFeedbackTimers = new WeakMap();
+
+  const SQL_KEYWORDS = new Set(`
+    ABORT ACTION ADD AFTER ALL ALTER ANALYZE AND ANY ARRAY AS ASC AUTOINCREMENT BEFORE BEGIN BETWEEN
+    BOTH BY CASCADE CASE CAST CHECK COLLATE COLUMN COMMIT CONFLICT CONSTRAINT CREATE CROSS CURRENT
+    CURRENT_DATE CURRENT_TIME CURRENT_TIMESTAMP DATABASE DEFAULT DEFERRABLE DELETE DESC DISTINCT DO
+    DROP ELSE END ESCAPE EXCEPT EXCLUDE EXISTS EXPLAIN FALSE FILTER FIRST FOLLOWING FOR FOREIGN FROM
+    FULL GENERATED GLOB GRANT GROUP HAVING IF ILIKE IN INDEX INITIALLY INNER INSERT INTERSECT INTERVAL
+    INTO IS ISNULL JOIN KEY LAST LATERAL LEFT LIKE LIMIT MATERIALIZED MERGE NATURAL NO NOT NOTNULL NULL
+    NULLS OF OFFSET ON OR ORDER OUTER OVER PARTITION PLAN PRAGMA PRECEDING PRIMARY QUALIFY QUERY RAISE
+    RANGE RECURSIVE REFERENCES REGEXP REINDEX RELEASE RENAME REPLACE RESTRICT RETURNING RIGHT ROLLBACK
+    ROW ROWS SAMPLE SAVEPOINT SELECT SET TABLE TEMP TEMPORARY THEN TIES TO TRANSACTION TRIGGER TRUE
+    UNBOUNDED UNION UNIQUE UNNEST UPDATE USING VACUUM VALUES VIEW VIRTUAL WHEN WHERE WINDOW WITH WITHOUT
+  `.trim().split(/\s+/));
+
+  const SQL_FUNCTIONS = new Set(`
+    ABS AVG COALESCE CONCAT COUNT DATE DATE_TRUNC EXTRACT IFNULL JSON_VALUE LENGTH LOWER MAX MIN NOW
+    NULLIF ROUND ROW_NUMBER SUBSTRING SUM TRIM UPPER
+  `.trim().split(/\s+/));
+
+  const SQL_TYPES = new Set(`
+    BIGINT BOOL BOOLEAN CHAR DATE DATETIME DECIMAL DOUBLE FLOAT INT INTEGER JSON NUMERIC REAL SERIAL
+    SMALLINT TEXT TIME TIMESTAMP UUID VARCHAR
+  `.trim().split(/\s+/));
+
+  const CODE_KEYWORDS = new Set(`
+    abstract arguments as async await boolean break byte case catch char class const continue debugger
+    default delete do double else enum export extends false final finally float for from function get
+    if implements import in instanceof int interface let long module namespace new null of package
+    private protected public return set short static string super switch symbol this throw true try
+    type typeof undefined var void while with yield
+  `.trim().split(/\s+/));
+
+  const TYPE_CONTEXT_WORDS = new Set(['class', 'interface', 'type', 'enum', 'extends', 'implements', 'new']);
+
+  const SECRET_VALUE_RE = /^(?:sk-ant-[A-Za-z0-9_-]{16,}|sk-proj-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{24,}|(?:sk|pk)_(?:live|test)_[0-9A-Za-z]{16,}|xox[baprs]-[0-9A-Za-z-]{16,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})$/;
+
+  function _escapeHTML(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function _normalizeNewlines(value) {
+    return String(value ?? '').replace(/\r\n?/g, '\n');
+  }
+
+  function _utf8ByteLength(value) {
+    return new TextEncoder().encode(String(value ?? '')).length;
+  }
+
+  function _formatBytes(bytes) {
+    if (bytes >= 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MiB`;
+    if (bytes >= 1024) return `${Math.round((bytes / 1024) * 10) / 10} KiB`;
+    return `${bytes} bytes`;
+  }
+
+  function _lineCount(value, stopAfter = Infinity) {
+    const text = String(value ?? '');
+    if (!text) return 0;
+    let count = 1;
+    for (let index = 0; index < text.length; index += 1) {
+      if (text.charCodeAt(index) === 10) {
+        count += 1;
+        if (count > stopAfter) return count;
+      }
+    }
+    return count;
+  }
+
+  function _limitViolation(code, message, detail = {}) {
+    return { code, message, ...detail };
+  }
+
+  function _limitError(violation) {
+    const error = new Error(violation.message);
+    error._maskingerLimitViolation = violation;
+    return error;
+  }
+
+  function _isLimitError(error) {
+    return Boolean(error && error._maskingerLimitViolation);
+  }
+
+  function _inputLimitViolation(input, label = '入力') {
+    const text = _normalizeNewlines(input);
+    const bytes = _utf8ByteLength(text);
+    if (bytes > MASKINGER_INPUT_MAX_BYTES) {
+      return _limitViolation(
+        'input_bytes',
+        `${label}は${_formatBytes(MASKINGER_INPUT_MAX_BYTES)}までです。大きなログは範囲を分けて貼り付けてください。`,
+        { bytes, maxBytes: MASKINGER_INPUT_MAX_BYTES }
+      );
+    }
+    const lines = _lineCount(text, MASKINGER_INPUT_MAX_LINES + 1);
+    if (lines > MASKINGER_INPUT_MAX_LINES) {
+      return _limitViolation(
+        'input_lines',
+        `${label}は${MASKINGER_INPUT_MAX_LINES}行までです。大きなログは範囲を分けて貼り付けてください。`,
+        { lines, maxLines: MASKINGER_INPUT_MAX_LINES }
+      );
+    }
+    return null;
+  }
+
+  function _storageAvailable() {
+    try {
+      const key = `${STORAGE_KEY}.probe`;
+      sessionStorage.setItem(key, '1');
+      sessionStorage.removeItem(key);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function _parsePlaceholder(placeholder) {
+    const match = /^MASK_(.+)_(\d{4,})$/.exec(placeholder);
+    if (!match) return null;
+    return { type: match[1], number: Number(match[2]) };
+  }
+
+  function _mappingKey(type, original) {
+    return `${type}\u0000${original}`;
+  }
+
+  function _isPlaceholderValue(value) {
+    return PLACEHOLDER_VALUE_RE.test(String(value ?? '').trim());
+  }
+
+  function _normalizeMappingType(value) {
+    const type = String(value ?? '').trim().toUpperCase();
+    return /^[A-Z0-9]+(?:_[A-Z0-9]+)*$/.test(type) ? type : '';
+  }
+
+  function _placeholderForNumber(type, number) {
+    return `MASK_${type}_${String(number).padStart(4, '0')}`;
+  }
+
+  function _nextPlaceholderNumber(type, stateRef = _state) {
+    return (stateRef._counterByType.get(type) || 0) + 1;
+  }
+
+  function _serializedMappingsByteLength(items = _state._mappings) {
+    return _utf8ByteLength(JSON.stringify(Array.isArray(items) ? items : []));
+  }
+
+  function _mappingStorageLimitViolation(items) {
+    const bytes = _serializedMappingsByteLength(items);
+    if (bytes <= MASKINGER_STORAGE_MAX_BYTES) return null;
+    return _limitViolation(
+      'mapping_storage_bytes',
+      `対応表の保存容量は${_formatBytes(MASKINGER_STORAGE_MAX_BYTES)}までです。対応表を破棄するか、入力範囲を分けてください。`,
+      { bytes, maxBytes: MASKINGER_STORAGE_MAX_BYTES }
+    );
+  }
+
+  function _resetMappingState() {
+    _state._counterByType = new Map();
+    _state._mappings = [];
+    _state._placeholderByKey = new Map();
+  }
+
+  function _snapshotMappingState() {
+    return {
+      _counterByType: new Map(_state._counterByType),
+      _mappings: _state._mappings.map((item) => ({ ...item })),
+      _placeholderByKey: new Map(_state._placeholderByKey)
+    };
+  }
+
+  function _restoreMappingState(snapshot) {
+    _state._counterByType = new Map(snapshot._counterByType);
+    _state._mappings = snapshot._mappings.map((item) => ({ ...item }));
+    _state._placeholderByKey = new Map(snapshot._placeholderByKey);
+  }
+
+  function _estimateMappingAllowance(type, original, stateRef = _state, placeholder = null) {
+    const normalizedType = _normalizeMappingType(type);
+    const normalizedOriginal = String(original ?? '');
+    if (!normalizedType) {
+      return {
+        ok: false,
+        violation: _limitViolation('mapping_type', '対応表の種類が不正なため処理を中断しました。')
+      };
+    }
+    if (_isPlaceholderValue(normalizedOriginal)) {
+      return { ok: true, passthrough: normalizedOriginal, type: normalizedType, original: normalizedOriginal };
+    }
+    const key = _mappingKey(normalizedType, normalizedOriginal);
+    const existing = stateRef._placeholderByKey.get(key);
+    if (existing) return { ok: true, existing, type: normalizedType, original: normalizedOriginal };
+    const originalBytes = _utf8ByteLength(normalizedOriginal);
+    if (originalBytes > MASKINGER_MAPPING_ORIGINAL_MAX_BYTES) {
+      return {
+        ok: false,
+        violation: _limitViolation(
+          'mapping_original_bytes',
+          `対応表の元値は1件あたり${_formatBytes(MASKINGER_MAPPING_ORIGINAL_MAX_BYTES)}までです。大きな値は範囲を分けてください。`,
+          { bytes: originalBytes, maxBytes: MASKINGER_MAPPING_ORIGINAL_MAX_BYTES }
+        )
+      };
+    }
+    if (stateRef._mappings.length >= MASKINGER_MAX_MAPPINGS) {
+      return {
+        ok: false,
+        violation: _limitViolation(
+          'mapping_count',
+          `対応表は${MASKINGER_MAX_MAPPINGS}件までです。対応表を破棄するか、入力範囲を分けてください。`,
+          { count: stateRef._mappings.length, maxMappings: MASKINGER_MAX_MAPPINGS }
+        )
+      };
+    }
+    const nextNumber = _nextPlaceholderNumber(normalizedType, stateRef);
+    const nextPlaceholder = placeholder || _placeholderForNumber(normalizedType, nextNumber);
+    const storageViolation = _mappingStorageLimitViolation([
+      ...stateRef._mappings,
+      {
+        _placeholder: nextPlaceholder,
+        _type: normalizedType,
+        _original: normalizedOriginal
+      }
+    ]);
+    if (storageViolation) {
+      return { ok: false, violation: storageViolation };
+    }
+    return {
+      ok: true,
+      type: normalizedType,
+      original: normalizedOriginal,
+      placeholder: nextPlaceholder,
+      number: nextNumber
+    };
+  }
+
+  function _replaceMappingsFromItems(items) {
+    _resetMappingState();
+    if (!Array.isArray(items)) return { loaded: 0, skipped: 0, trimmed: 0 };
+    const loadedPlaceholders = new Set();
+    let skipped = 0;
+    let trimmed = 0;
+    for (let index = 0; index < items.length; index += 1) {
+      if (_state._mappings.length >= MASKINGER_MAX_MAPPINGS) {
+        trimmed = items.length - index;
+        break;
+      }
+      const item = items[index];
+      if (!item || typeof item._placeholder !== 'string' || typeof item._type !== 'string') {
+        skipped += 1;
+        continue;
+      }
+      const parsedPlaceholder = _parsePlaceholder(item._placeholder);
+      const type = _normalizeMappingType(item._type);
+      if (!parsedPlaceholder || !type || parsedPlaceholder.type !== type || loadedPlaceholders.has(item._placeholder)) {
+        skipped += 1;
+        continue;
+      }
+      if (!Number.isSafeInteger(parsedPlaceholder.number) || parsedPlaceholder.number < 1) {
+        skipped += 1;
+        continue;
+      }
+      const original = String(item._original ?? '');
+      const allowance = _estimateMappingAllowance(type, original, _state, item._placeholder);
+      if (!allowance.ok || allowance.passthrough || allowance.existing) {
+        if (allowance.violation?.code === 'mapping_storage_bytes') {
+          trimmed = items.length - index;
+          break;
+        }
+        skipped += 1;
+        continue;
+      }
+      const mapping = {
+        _placeholder: item._placeholder,
+        _type: allowance.type,
+        _original: allowance.original
+      };
+      _state._mappings.push(mapping);
+      loadedPlaceholders.add(mapping._placeholder);
+      _state._placeholderByKey.set(_mappingKey(mapping._type, mapping._original), mapping._placeholder);
+      const current = _state._counterByType.get(parsedPlaceholder.type) || 0;
+      _state._counterByType.set(parsedPlaceholder.type, Math.max(current, parsedPlaceholder.number));
+    }
+    return { loaded: _state._mappings.length, skipped, trimmed };
+  }
+
+  function _loadMappings() {
+    if (!_storageAvailable()) return;
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      if (_utf8ByteLength(raw) > MASKINGER_STORAGE_MAX_BYTES) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        _showToast('保存済み対応表が大きすぎるため読み込みませんでした。');
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const result = _replaceMappingsFromItems(parsed);
+      if (result.skipped || result.trimmed) {
+        _saveMappings();
+        _showToast('保存済み対応表の一部を安全な上限に合わせて読み込みました。');
+      }
+    } catch (_) {
+      _resetMappingState();
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (_) {}
+    }
+  }
+
+  function _saveMappings() {
+    if (!_storageAvailable()) return;
+    const serialized = JSON.stringify(_state._mappings);
+    const storageViolation = _mappingStorageLimitViolation(_state._mappings);
+    if (storageViolation) {
+      _showToast(storageViolation.message);
+      return;
+    }
+    try {
+      sessionStorage.setItem(STORAGE_KEY, serialized);
+    } catch (_) {
+      _showToast('対応表の保存に失敗しました。タブ内のメモリ上では処理を継続します。');
+    }
+  }
+
+  function _markMappingsDirty() {
+    if (_mappingSaveDepth > 0) {
+      _pendingMappingSave = true;
+      return;
+    }
+    _saveMappings();
+  }
+
+  function _nextPlaceholder(type, number = _nextPlaceholderNumber(type)) {
+    const next = number;
+    _state._counterByType.set(type, next);
+    return _placeholderForNumber(type, next);
+  }
+
+  function _remember(type, original) {
+    const allowance = _estimateMappingAllowance(type, original);
+    if (allowance.passthrough) return allowance.passthrough;
+    if (allowance.existing) return allowance.existing;
+    if (!allowance.ok) throw _limitError(allowance.violation);
+
+    const placeholder = _nextPlaceholder(allowance.type, allowance.number);
+    _state._placeholderByKey.set(_mappingKey(allowance.type, allowance.original), placeholder);
+    _state._mappings.push({
+      _placeholder: placeholder,
+      _type: allowance.type,
+      _original: allowance.original
+    });
+    _markMappingsDirty();
+    return placeholder;
+  }
+
+  function _maskWith(type, original) {
+    if (original == null || original === '') return original;
+    return _remember(type, original);
+  }
+
+  function _looksLikeSql(text) {
+    const sample = String(text).slice(0, 12000);
+    const hasMainVerb = /\b(SELECT|INSERT|UPDATE|DELETE|MERGE|WITH)\b/i.test(sample);
+    const hasClause = /\b(FROM|JOIN|WHERE|GROUP\s+BY|ORDER\s+BY|VALUES|SET)\b/i.test(sample);
+    const hasSqlShape = /(?:\bSELECT\b[\s\S]{0,800}\bFROM\b|\bUPDATE\b[\s\S]{0,400}\bSET\b|\bINSERT\s+INTO\b|\bDELETE\s+FROM\b)/i.test(sample);
+    const hasDynamicSqlTag = /<\/?(?:include|sql|select|insert|update|delete|where|set|trim|if|choose|when|otherwise|foreach|is[A-Z][A-Za-z0-9_-]*)\b/i.test(sample);
+    const hasDynamicSqlFragment = hasDynamicSqlTag
+      && (/\b(?:AND|OR|WHERE|SET|FROM|JOIN|ORDER\s+BY|GROUP\s+BY|VALUES)\b/i.test(sample) || /[#:$]\{[^}]+\}|#[A-Za-z_][\w$.\[\]]*#|:\w+|@\w+/.test(sample));
+    return hasSqlShape || (hasMainVerb && hasClause) || hasDynamicSqlFragment;
+  }
+
+  function _looksLikeCode(text) {
+    const sample = String(text).slice(0, 12000);
+    let score = 0;
+    if (/[{};]/.test(sample)) score += 1;
+    if (/\b(class|function|const|let|var|return|import|export|async|await|def|public|private)\b/.test(sample)) score += 2;
+    if (/=>|::|===|!==|\.[A-Za-z_$][\w$]*\s*\(/.test(sample)) score += 1;
+    if (/^\s*(\/\/|#|\/\*)/m.test(sample)) score += 1;
+    return score >= 2;
+  }
+
+  function _hasStrongCodeSignals(text) {
+    const sample = _stripSqlXmlNoiseForMode(text).slice(0, 12000);
+    return /[{}]/.test(sample)
+      || /\b(class|function|const|let|var|return|import|export|async|await|def|interface|extends|implements)\b/.test(sample)
+      || /=>|===|!==|::/.test(sample);
+  }
+
+  function _stripSqlXmlNoiseForMode(text) {
+    return String(text)
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<\/?[A-Za-z][A-Za-z0-9:_-]*(?:\s+[^<>]*?)?\s*\/?>/g, ' ')
+      .replace(/[#$]\{[^}]*\}/g, ' ')
+      .replace(/#[A-Za-z_][\w$.\[\]]*#/g, ' ');
+  }
+
+  function _detectMode(text) {
+    const value = String(text);
+    if (!value.trim()) return 'EMPTY';
+    const sql = _looksLikeSql(value);
+    const code = _looksLikeCode(value);
+    if (sql && (!code || !_hasStrongCodeSignals(value))) return 'SQL';
+    if (code) return 'CODE';
+    if (sql) return 'SQL';
+    return 'TEXT';
+  }
+
+  function _modeText(mode) {
+    return {
+      EMPTY: '空',
+      TEXT: '通常テキスト',
+      CODE: 'コード',
+      SQL: 'SQL'
+    }[mode] || '通常テキスト';
+  }
+
+  function _maskText(input) {
+    const text = _normalizeNewlines(input);
+    const inputViolation = _inputLimitViolation(text, 'マスク前の入力');
+    if (inputViolation) return { text: '', mode: 'LIMIT', rejected: true, violation: inputViolation };
+
+    const snapshot = _snapshotMappingState();
+    const previousSaveDepth = _mappingSaveDepth;
+    const previousPendingSave = _pendingMappingSave;
+    _mappingSaveDepth += 1;
+    _pendingMappingSave = false;
+    try {
+      const mode = _detectMode(text);
+      let result;
+      if (mode === 'EMPTY') {
+        result = { text: '', mode };
+      } else if (mode === 'SQL') {
+        result = { text: _maskSql(text), mode };
+      } else {
+        const protectedXml = _protectSqlXmlTags(text);
+        const masked = mode === 'CODE' ? _maskCode(protectedXml.text) : _maskGeneric(protectedXml.text);
+        result = { text: _restoreProtectedSegments(masked, protectedXml.segments), mode };
+      }
+      const shouldSaveMappings = _pendingMappingSave;
+      _mappingSaveDepth = previousSaveDepth;
+      _pendingMappingSave = previousPendingSave;
+      if (shouldSaveMappings) {
+        if (_mappingSaveDepth > 0) _pendingMappingSave = true;
+        else _saveMappings();
+      }
+      return result;
+    } catch (error) {
+      _restoreMappingState(snapshot);
+      _mappingSaveDepth = previousSaveDepth;
+      _pendingMappingSave = previousPendingSave;
+      if (_isLimitError(error)) {
+        return {
+          text: '',
+          mode: 'LIMIT',
+          rejected: true,
+          violation: error._maskingerLimitViolation
+        };
+      }
+      throw error;
+    }
+  }
+
+  function _maskGeneric(text) {
+    let out = String(text);
+
+    out = out.replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, (match) => _maskWith('SECRET', match));
+    out = out.replace(/\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis|amqps?|jdbc:[a-z0-9]+):\/\/[^\s'"`<>]+/gi, (match) => _maskWith('SECRET', match));
+    out = out.replace(/\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)([A-Za-z0-9._~+/=-]{12,})/gi, (match, prefix, token) => {
+      if (_isPlaceholderValue(token)) return match;
+      return prefix + _maskWith('SECRET', token);
+    });
+    out = out.replace(/\b(Bearer|Basic)\s+([A-Za-z0-9._~+/=-]{12,})/gi, (match, scheme, token) => {
+      if (_isPlaceholderValue(token)) return match;
+      return `${scheme} ${_maskWith('SECRET', token)}`;
+    });
+    out = out.replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, (match) => _maskWith('SECRET', match));
+
+    const secretPatterns = [
+      /\bsk-ant-[A-Za-z0-9_-]{16,}\b/g,
+      /\bsk-proj-[A-Za-z0-9_-]{16,}\b/g,
+      /\bsk-[A-Za-z0-9_-]{20,}\b/g,
+      /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g,
+      /\bgithub_pat_[A-Za-z0-9_]{20,}\b/g,
+      /\bAIza[0-9A-Za-z_-]{24,}\b/g,
+      /\b(?:sk|pk)_(?:live|test)_[0-9A-Za-z]{16,}\b/g,
+      /\bxox[baprs]-[0-9A-Za-z-]{16,}\b/g,
+      /\bAKIA[0-9A-Z]{16}\b/g,
+      /\bASIA[0-9A-Z]{16}\b/g
+    ];
+    for (const pattern of secretPatterns) {
+      out = out.replace(pattern, (match) => _maskWith('SECRET', match));
+    }
+
+    out = out.replace(/\bhttps?:\/\/[^\s'"`<>]+/gi, (match) => _maskWith('URL', match));
+
+    out = out.replace(/(["']?(?:password|passwd|pwd|token|api[_-]?key|secret|client[_-]?secret|access[_-]?key|email|phone|address|user[_-]?id)["']?\s*[:=]\s*)(["']?)([^"',;\n]+)(\2)/gi, (match, prefix, quote, value, closeQuote) => {
+      const trimmed = value.trim();
+      if (/[\uE000-\uF8FF]/.test(value)) return match;
+      if (!trimmed || _isPlaceholderValue(trimmed)) return match;
+      PLACEHOLDER_RE.lastIndex = 0;
+      const type = /email/i.test(prefix) ? 'EMAIL' : /phone/i.test(prefix) ? 'PHONE' : /address/i.test(prefix) ? 'ADDRESS' : /user[_-]?id/i.test(prefix) ? 'PII_ID' : 'SECRET';
+      const leading = value.match(/^\s*/)[0];
+      const trailing = value.match(/\s*$/)[0];
+      return `${prefix}${quote}${leading}${_maskWith(type, trimmed)}${trailing}${closeQuote}`;
+    });
+
+    out = out.replace(/\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g, (match) => _maskWith('ACCOUNT', match));
+    out = out.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi, (match) => _maskWith('UUID', match));
+    out = out.replace(/\b\d{3}-\d{2}-\d{4}\b/g, (match) => _maskWith('PII_ID', match));
+    out = out.replace(/\b(?:\d[ -]*?){13,19}\b/g, (match) => {
+      const digits = match.replace(/\D/g, '');
+      if (digits.length < 13 || digits.length > 19 || !_passesLuhn(digits)) return match;
+      return _maskWith('CARD', match);
+    });
+    out = out.replace(/\b\d{4}\s?\d{4}\s?\d{4}\b/g, (match) => _maskWith('PII_ID', match));
+
+    out = out.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, (match) => _maskWith('EMAIL', match));
+    out = out.replace(/(^|[^@\w])((?:[a-z0-9-]+\.)+(?:com|net|org|io|jp|co\.jp|dev|app|cloud|local|internal)\b)/gi, (match, prefix, domain) => `${prefix}${_maskWith('DOMAIN', domain)}`);
+    out = out.replace(/\b(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}\b/g, (match) => _maskWith('IP', match));
+    out = out.replace(/\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b/gi, (match) => _maskWith('MAC', match));
+    out = out.replace(/\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/gi, (match) => _maskWith('IP', match));
+    out = out.replace(/\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?0\d{1,4}\)?[-.\s]?)\d{2,4}[-.\s]?\d{3,4}\b/g, (match) => _maskWith('PHONE', match));
+    out = out.replace(/〒?\d{3}-?\d{4}/g, (match) => _maskWith('POSTAL', match));
+    out = out.replace(/(?:[A-Za-z]:\\(?:[^\\/:*?"<>|\r\n]+\\?)+|\/(?:Users|home|var|etc|opt|srv|tmp)\/[^\s'"`<>]+)/g, (match) => _maskWith('PATH', match));
+    out = out.replace(/((?:氏名|名前|担当者|顧客名)\s*[:：=]\s*)([^\n,;]{2,60})/g, (_, prefix, value) => prefix + _maskWith('PERSON', value.trim()));
+    out = out.replace(/((?:会社名|組織名|法人名|部署名)\s*[:：=]\s*)([^\n,;]{2,80})/g, (_, prefix, value) => prefix + _maskWith('ORG', value.trim()));
+    out = out.replace(/((?:住所|所在地)\s*[:：=]\s*)([^\n,;]{2,120})/g, (_, prefix, value) => prefix + _maskWith('ADDRESS', value.trim()));
+    out = out.replace(/((?:口座番号|account(?:\s+number)?|iban)\s*[:：=]\s*)([A-Z0-9 -]{6,34})/gi, (_, prefix, value) => prefix + _maskWith('ACCOUNT', value.trim()));
+    out = out.replace(/(?:[一-龠]{2,}(?:都|道|府|県)[一-龠ぁ-んァ-ヶー0-9０-９ \t\-丁目番地号]{4,})/g, (match) => _maskWith('ADDRESS', match));
+
+    return out;
+  }
+
+  function _passesLuhn(digits) {
+    let sum = 0;
+    let doubleIt = false;
+    for (let i = digits.length - 1; i >= 0; i -= 1) {
+      let n = Number(digits[i]);
+      if (doubleIt) {
+        n *= 2;
+        if (n > 9) n -= 9;
+      }
+      sum += n;
+      doubleIt = !doubleIt;
+    }
+    return sum % 10 === 0;
+  }
+
+  function _maskCode(text) {
+    const segmented = _maskCodeCommentsAndStrings(text);
+    let out = segmented.text;
+    out = _maskGeneric(out);
+    out = _maskCodeNumbers(out);
+    out = _maskCodeIdentifiers(out);
+    return _restoreCodeSegments(out, segmented.segments);
+  }
+
+  function _maskCodeCommentsAndStrings(text) {
+    let out = '';
+    let i = 0;
+    const segments = [];
+    const pushSegment = (value) => {
+      const token = `\uE000${String.fromCharCode(0xE100 + segments.length)}\uE001`;
+      segments.push({ token, value });
+      return token;
+    };
+
+    while (i < text.length) {
+      const ch = text[i];
+      const next = text[i + 1];
+
+      if (ch === '/' && next === '/') {
+        const end = _indexOfLineEnd(text, i + 2);
+        const content = text.slice(i + 2, end);
+        out += pushSegment(`//${_maskWith('COMMENT', content)}`);
+        i = end;
+        continue;
+      }
+
+      if (ch === '/' && next === '*') {
+        const end = text.indexOf('*/', i + 2);
+        const close = end === -1 ? text.length : end;
+        const content = text.slice(i + 2, close);
+        out += pushSegment(`/*${_maskWith('COMMENT', content)}${end === -1 ? '' : '*/'}`);
+        i = end === -1 ? text.length : end + 2;
+        continue;
+      }
+
+      if (ch === '#' && _isLineCommentPosition(text, i)) {
+        const end = _indexOfLineEnd(text, i + 1);
+        const content = text.slice(i + 1, end);
+        out += pushSegment(`#${_maskWith('COMMENT', content)}`);
+        i = end;
+        continue;
+      }
+
+      if (ch === '-' && next === '-' && _isLineCommentPosition(text, i)) {
+        const end = _indexOfLineEnd(text, i + 2);
+        const content = text.slice(i + 2, end);
+        out += pushSegment(`--${_maskWith('COMMENT', content)}`);
+        i = end;
+        continue;
+      }
+
+      if (ch === '"' || ch === "'" || ch === '`') {
+        const parsed = _readQuoted(text, i, ch);
+        const inner = parsed.inner;
+        let maskedLiteral = '';
+        if (_looksLikeSql(inner)) {
+          maskedLiteral = ch + _maskSql(inner) + (parsed.closed ? ch : '');
+        } else if (SECRET_VALUE_RE.test(inner.trim())) {
+          maskedLiteral = ch + _maskWith('SECRET', inner) + (parsed.closed ? ch : '');
+        } else {
+          maskedLiteral = ch + _maskWith('STRING', inner) + (parsed.closed ? ch : '');
+        }
+        out += pushSegment(maskedLiteral);
+        i = parsed.end;
+        continue;
+      }
+
+      out += ch;
+      i += 1;
+    }
+    return { text: out, segments };
+  }
+
+  function _restoreCodeSegments(text, segments) {
+    let out = text;
+    for (const segment of segments) {
+      out = out.split(segment.token).join(segment.value);
+    }
+    return out;
+  }
+
+  function _indexOfLineEnd(text, start) {
+    const index = text.indexOf('\n', start);
+    return index === -1 ? text.length : index;
+  }
+
+  function _isLineCommentPosition(text, index) {
+    if (index === 0) return true;
+    const before = text.slice(0, index);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    return before.slice(lineStart).trim() === '';
+  }
+
+  function _readQuoted(text, start, quote) {
+    let i = start + 1;
+    let inner = '';
+    let escaped = false;
+    while (i < text.length) {
+      const ch = text[i];
+      if (escaped) {
+        inner += ch;
+        escaped = false;
+        i += 1;
+        continue;
+      }
+      if (ch === '\\') {
+        inner += ch;
+        escaped = true;
+        i += 1;
+        continue;
+      }
+      if (ch === quote) {
+        return { inner, end: i + 1, closed: true };
+      }
+      inner += ch;
+      i += 1;
+    }
+    return { inner, end: i, closed: false };
+  }
+
+  function _maskCodeNumbers(text) {
+    return text.replace(/(^|[^\w$])(-?(?:0x[0-9a-f]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?))\b/gi, (match, prefix, value) => {
+      if (!value || _isPlaceholderValue(value)) return match;
+      PLACEHOLDER_RE.lastIndex = 0;
+      return prefix + _maskWith('CODE_NUMBER', value);
+    });
+  }
+
+  function _maskCodeIdentifiers(text) {
+    return text.replace(/\b[$A-Za-z_][\w$]*\b/g, (word, offset, source) => {
+      if (word.startsWith('MASK_')) return word;
+      if (CODE_KEYWORDS.has(word)) return word;
+      const lower = word.toLowerCase();
+      if (CODE_KEYWORDS.has(lower)) return word;
+      const previousWord = _wordBefore(source, offset).toLowerCase();
+      const previousChar = _previousNonSpace(source, offset);
+      const nextChar = _nextNonSpace(source, offset + word.length);
+
+      let type = 'CODE_VAR';
+      if (TYPE_CONTEXT_WORDS.has(previousWord) || /^[A-Z]/.test(word)) {
+        type = 'CODE_TYPE';
+      } else if (nextChar === '(' || previousChar === '.') {
+        type = nextChar === '(' ? 'CODE_METHOD' : 'CODE_VAR';
+      }
+
+      return _maskWith(type, word);
+    });
+  }
+
+  function _wordBefore(source, offset) {
+    const before = source.slice(0, offset).match(/[$A-Za-z_][\w$]*\s*$/);
+    return before ? before[0].trim() : '';
+  }
+
+  function _previousNonSpace(source, offset) {
+    for (let i = offset - 1; i >= 0; i -= 1) {
+      if (!/\s/.test(source[i])) return source[i];
+    }
+    return '';
+  }
+
+  function _nextNonSpace(source, offset) {
+    for (let i = offset; i < source.length; i += 1) {
+      if (!/\s/.test(source[i])) return source[i];
+    }
+    return '';
+  }
+
+  function _maskSql(sql) {
+    const protectedSql = _protectSqlXmlTags(sql);
+    const tokens = _tokenizeSql(protectedSql.text);
+    let clause = 'NEUTRAL';
+    let expectTable = false;
+    let tablePathActive = false;
+    let pendingTableAlias = false;
+    let preserveNextAlias = false;
+    let parenDepth = 0;
+    let insertColumnDepth = 0;
+
+    const columnClauses = new Set(['SELECT', 'WHERE', 'ON', 'GROUP', 'ORDER', 'HAVING', 'SET', 'RETURNING', 'USING', 'INSERT_COLUMNS']);
+
+    const rememberClause = (upper) => {
+      if (upper === 'AS') return;
+      if (upper === 'SELECT') { clause = 'SELECT'; pendingTableAlias = false; }
+      if (upper === 'FROM') { clause = 'FROM'; expectTable = true; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'JOIN') { clause = 'JOIN'; expectTable = true; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'WHERE') { clause = 'WHERE'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'ON') { clause = 'ON'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'GROUP') { clause = 'GROUP'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'ORDER') { clause = 'ORDER'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'HAVING') { clause = 'HAVING'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'UPDATE') { clause = 'UPDATE'; expectTable = true; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'INTO') { clause = 'INTO'; expectTable = true; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'WITH') { clause = 'WITH'; expectTable = true; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'SET') { clause = 'SET'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'VALUES') { clause = 'VALUES'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'RETURNING') { clause = 'RETURNING'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'USING') { clause = 'USING'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+      if (upper === 'MERGE') { clause = 'MERGE'; expectTable = true; tablePathActive = false; pendingTableAlias = false; }
+      if ((upper === 'AND' || upper === 'OR') && clause === 'NEUTRAL') { clause = 'WHERE'; expectTable = false; tablePathActive = false; pendingTableAlias = false; }
+    };
+
+    const shouldMaskTable = (prevValue, nextValue) => {
+      if (prevValue === '.' && tablePathActive) return true;
+      if (clause === 'WITH' && nextValue === 'AS') return true;
+      return expectTable || tablePathActive;
+    };
+
+    const completeTableIfNeeded = (nextValue) => {
+      if (nextValue === '.') {
+        tablePathActive = true;
+        return;
+      }
+      if (clause === 'INTO' && nextValue === '(') {
+        clause = 'INSERT_COLUMNS';
+        insertColumnDepth = parenDepth + 1;
+      }
+      expectTable = false;
+      tablePathActive = false;
+      pendingTableAlias = clause !== 'WITH' && nextValue !== '(';
+    };
+
+    const masked = tokens.map((token, index) => {
+      if (token.kind === 'protected') {
+        const original = protectedSql.byToken.get(token.value) || '';
+        if (/^<where\b/i.test(original)) {
+          clause = 'WHERE';
+          expectTable = false;
+          tablePathActive = false;
+          pendingTableAlias = false;
+        }
+        if (/^<set\b/i.test(original)) {
+          clause = 'SET';
+          expectTable = false;
+          tablePathActive = false;
+          pendingTableAlias = false;
+        }
+        return token.value;
+      }
+
+      if (token.kind === 'space' || token.kind === 'operator') return token.value;
+
+      if (token.kind === 'comment-line') {
+        return `--${token.value}`;
+      }
+
+      if (token.kind === 'comment-block') {
+        return `/*${token.value}*/`;
+      }
+
+      if (token.kind === 'string') {
+        return `'${_maskWith('SQL_VALUE', token.value)}'`;
+      }
+
+      if (token.kind === 'param') {
+        const placeholder = _maskWith('SQL_PARAM', token.inner ?? token.value.slice(1));
+        return `${token.prefix ?? token.value[0]}${placeholder}${token.suffix ?? ''}`;
+      }
+
+      if (token.kind === 'number') {
+        return _maskWith('SQL_VALUE', token.value);
+      }
+
+      if (token.kind === 'punct') {
+        if (token.value === ',') {
+          pendingTableAlias = false;
+          preserveNextAlias = false;
+          if (clause === 'FROM' || clause === 'JOIN') {
+            expectTable = true;
+            tablePathActive = false;
+          }
+        }
+        if (token.value === '(') {
+          parenDepth += 1;
+          if (preserveNextAlias) preserveNextAlias = false;
+        }
+        if (token.value === ')') {
+          if (clause === 'INSERT_COLUMNS' && parenDepth === insertColumnDepth) {
+            clause = 'NEUTRAL';
+            insertColumnDepth = 0;
+          }
+          parenDepth = Math.max(0, parenDepth - 1);
+          pendingTableAlias = true;
+          preserveNextAlias = false;
+        }
+        if (token.value === ';') {
+          clause = 'NEUTRAL';
+          expectTable = false;
+          tablePathActive = false;
+          pendingTableAlias = false;
+          preserveNextAlias = false;
+          insertColumnDepth = 0;
+        }
+        return token.value;
+      }
+
+      if (token.kind !== 'ident' && token.kind !== 'quoted-ident') return token.value;
+
+      const value = token.value;
+      const upper = value.toUpperCase();
+      const prev = _previousSignificant(tokens, index);
+      const next = _nextSignificant(tokens, index);
+      const prevValue = prev ? prev.value.toUpperCase() : '';
+      const nextValue = next ? next.value.toUpperCase() : '';
+      const quote = token.kind === 'quoted-ident' ? token.quote : '';
+      const formatIdentifier = (masked) => quote ? `${quote}${masked}${quote}` : masked;
+
+      if (value.startsWith('MASK_')) return token.value;
+
+      if (token.kind === 'ident' && (SQL_KEYWORDS.has(upper) || SQL_FUNCTIONS.has(upper) || SQL_TYPES.has(upper))) {
+        if (upper === 'AS') {
+          preserveNextAlias = Boolean(next && (next.kind === 'ident' || next.kind === 'quoted-ident'));
+          pendingTableAlias = false;
+        } else {
+          preserveNextAlias = false;
+          rememberClause(upper);
+        }
+        return token.value;
+      }
+
+      if (preserveNextAlias) {
+        preserveNextAlias = false;
+        return token.value;
+      }
+
+      if (pendingTableAlias && prevValue !== '.' && nextValue !== '.') {
+        pendingTableAlias = false;
+        return token.value;
+      }
+
+      if (nextValue === '(' && !shouldMaskTable(prevValue, nextValue)) {
+        return token.value;
+      }
+
+      if (shouldMaskTable(prevValue, nextValue)) {
+        completeTableIfNeeded(nextValue);
+        return formatIdentifier(_maskWith('SQL_TABLE', value));
+      }
+
+      if (nextValue === '.') {
+        return token.value;
+      }
+
+      if (prevValue === '.' || columnClauses.has(clause)) {
+        return formatIdentifier(_maskWith('SQL_COL', value));
+      }
+
+      return token.value;
+    }).join('');
+
+    return _restoreProtectedSegments(masked, protectedSql.segments);
+  }
+
+  function _protectSqlXmlTags(sql) {
+    const segments = [];
+    const byToken = new Map();
+    const pushSegment = (value) => {
+      const token = `\uE000${String.fromCharCode(0xE300 + segments.length)}\uE001`;
+      segments.push({ token, value });
+      byToken.set(token, value);
+      return token;
+    };
+
+    const text = String(sql)
+      .replace(/<!--[\s\S]*?-->/g, (match) => pushSegment(match))
+      .replace(/<\/?[A-Za-z][A-Za-z0-9:_-]*(?:\s+[^<>]*?)?\s*\/?>/g, (match) => pushSegment(match));
+
+    return { text, segments, byToken };
+  }
+
+  function _restoreProtectedSegments(text, segments) {
+    let out = text;
+    for (const segment of segments) {
+      out = out.split(segment.token).join(segment.value);
+    }
+    return out;
+  }
+
+  function _tokenizeSql(sql) {
+    const tokens = [];
+    let i = 0;
+    while (i < sql.length) {
+      const ch = sql[i];
+      const next = sql[i + 1];
+
+      if (ch === '\uE000') {
+        const end = sql.indexOf('\uE001', i + 1);
+        if (end !== -1) {
+          tokens.push({ kind: 'protected', value: sql.slice(i, end + 1) });
+          i = end + 1;
+          continue;
+        }
+      }
+
+      if (/\s/.test(ch)) {
+        const start = i;
+        while (i < sql.length && /\s/.test(sql[i])) i += 1;
+        tokens.push({ kind: 'space', value: sql.slice(start, i) });
+        continue;
+      }
+
+      if (ch === '-' && next === '-') {
+        const end = _indexOfLineEnd(sql, i + 2);
+        tokens.push({ kind: 'comment-line', value: sql.slice(i + 2, end) });
+        i = end;
+        continue;
+      }
+
+      if (ch === '/' && next === '*') {
+        const end = sql.indexOf('*/', i + 2);
+        const close = end === -1 ? sql.length : end;
+        tokens.push({ kind: 'comment-block', value: sql.slice(i + 2, close) });
+        i = end === -1 ? sql.length : end + 2;
+        continue;
+      }
+
+      if (ch === "'") {
+        const parsed = _readSqlString(sql, i);
+        tokens.push({ kind: 'string', value: parsed.inner });
+        i = parsed.end;
+        continue;
+      }
+
+      if (ch === '"' || ch === '`') {
+        const parsed = _readQuoted(sql, i, ch);
+        tokens.push({ kind: 'quoted-ident', value: parsed.inner, quote: ch });
+        i = parsed.end;
+        continue;
+      }
+
+      if ((ch === '#' || ch === '$') && next === '{') {
+        const close = sql.indexOf('}', i + 2);
+        if (close !== -1) {
+          const inner = sql.slice(i + 2, close);
+          tokens.push({ kind: 'param', value: sql.slice(i, close + 1), prefix: sql.slice(i, i + 2), inner, suffix: '}' });
+          i = close + 1;
+          continue;
+        }
+      }
+
+      if (ch === '#' && _isIdentStart(next || '')) {
+        const start = i;
+        i += 2;
+        while (i < sql.length && _isIdentPart(sql[i])) i += 1;
+        if (sql[i] === '#') {
+          const inner = sql.slice(start + 1, i);
+          tokens.push({ kind: 'param', value: sql.slice(start, i + 1), prefix: '#', inner, suffix: '#' });
+          i += 1;
+          continue;
+        }
+        i = start;
+      }
+
+      if ((ch === ':' || ch === '@') && _isIdentStart(next || '')) {
+        const start = i;
+        i += 2;
+        while (i < sql.length && _isIdentPart(sql[i])) i += 1;
+        tokens.push({ kind: 'param', value: sql.slice(start, i), prefix: sql[start], inner: sql.slice(start + 1, i), suffix: '' });
+        continue;
+      }
+
+      if (/\d/.test(ch)) {
+        const start = i;
+        i += 1;
+        while (i < sql.length && /[0-9._]/.test(sql[i])) i += 1;
+        tokens.push({ kind: 'number', value: sql.slice(start, i) });
+        continue;
+      }
+
+      if (_isIdentStart(ch)) {
+        const start = i;
+        i += 1;
+        while (i < sql.length && _isIdentPart(sql[i])) i += 1;
+        tokens.push({ kind: 'ident', value: sql.slice(start, i) });
+        continue;
+      }
+
+      if ('(),.;'.includes(ch)) {
+        tokens.push({ kind: 'punct', value: ch });
+        i += 1;
+        continue;
+      }
+
+      tokens.push({ kind: 'operator', value: ch });
+      i += 1;
+    }
+    return tokens;
+  }
+
+  function _readSqlString(text, start) {
+    let i = start + 1;
+    let inner = '';
+    while (i < text.length) {
+      const ch = text[i];
+      if (ch === "'" && text[i + 1] === "'") {
+        inner += "''";
+        i += 2;
+        continue;
+      }
+      if (ch === "'") return { inner, end: i + 1 };
+      inner += ch;
+      i += 1;
+    }
+    return { inner, end: i };
+  }
+
+  function _isIdentStart(ch) {
+    return Boolean(ch) && /[A-Za-z_\p{L}]/u.test(ch);
+  }
+
+  function _isIdentPart(ch) {
+    return Boolean(ch) && /[A-Za-z0-9_$\p{L}\p{N}]/u.test(ch);
+  }
+
+  function _previousSignificant(tokens, index) {
+    for (let i = index - 1; i >= 0; i -= 1) {
+      if (tokens[i].kind !== 'space') return tokens[i];
+    }
+    return null;
+  }
+
+  function _nextSignificant(tokens, index) {
+    for (let i = index + 1; i < tokens.length; i += 1) {
+      if (tokens[i].kind !== 'space') return tokens[i];
+    }
+    return null;
+  }
+
+  function _restoreKey(match, bracketed) {
+    let key = bracketed || match;
+    if (key.startsWith('[') && key.endsWith(']')) key = key.slice(1, -1);
+    if (!key.startsWith('MASK_')) key = `MASK_${key}`;
+    return key;
+  }
+
+  function _restoreText(input) {
+    const inputViolation = _inputLimitViolation(input, '復元前の入力');
+    if (inputViolation) {
+      return { text: '', restored: 0, unresolved: 0, rejected: true, violation: inputViolation };
+    }
+    const byPlaceholder = new Map(_state._mappings.map((item) => [item._placeholder, item._original]));
+    let restored = 0;
+    let text = _normalizeNewlines(input);
+    for (let pass = 0; pass < 8; pass += 1) {
+      let changed = false;
+      text = text.replace(RESTORE_RE, (match, bracketed) => {
+        const key = _restoreKey(match, bracketed);
+        if (!byPlaceholder.has(key)) return match;
+        const original = byPlaceholder.get(key);
+        if (original === match) return match;
+        restored += 1;
+        changed = true;
+        return original;
+      });
+      if (!changed) break;
+    }
+    let unresolved = 0;
+    text.replace(RESTORE_RE, (match, bracketed) => {
+      const key = _restoreKey(match, bracketed);
+      if (!byPlaceholder.has(key)) {
+        unresolved += 1;
+      }
+      return match;
+    });
+    return { text, restored, unresolved };
+  }
+
+  function _renderMappings() {
+    if ($mappingCount) $mappingCount.textContent = String(_state._mappings.length);
+    if (!_state._mappings.length) {
+      $mappingBody.innerHTML = '<tr><td class="empty-row" colspan="3">まだ対応表はありません。</td></tr>';
+      return;
+    }
+    const visibleMappings = _state._mappings.slice(0, MASKINGER_MAPPING_RENDER_MAX_ROWS);
+    const rows = visibleMappings.map((item) => `
+      <tr>
+        <td><code>${_escapeHTML(item._placeholder)}</code></td>
+        <td><span class="type-pill">${_escapeHTML(item._type)}</span></td>
+        <td class="original-cell${_hideOriginals ? ' is-hidden' : ''}">${_escapeHTML(item._original)}</td>
+      </tr>
+    `);
+    if (_state._mappings.length > visibleMappings.length) {
+      rows.push(`<tr><td class="empty-row" colspan="3">ほか${_state._mappings.length - visibleMappings.length}件は表示を省略しています。復元には使用されます。</td></tr>`);
+    }
+    $mappingBody.innerHTML = rows.join('');
+  }
+
+  function _updateMask() {
+    const result = _maskText($sourceInput.value);
+    if (result.rejected) {
+      $sourceInput.value = _lastAcceptedSourceValue;
+      _showToast(result.violation.message);
+      return;
+    }
+    $maskedOutput.value = result.text;
+    if ($modeLabel) $modeLabel.textContent = _modeText(result.mode);
+    _lastAcceptedSourceValue = $sourceInput.value;
+    _renderMappings();
+    _updateRestore();
+  }
+
+  function _updateRestore() {
+    const result = _restoreText($restoreInput.value);
+    if (result.rejected) {
+      $restoreInput.value = _lastAcceptedRestoreValue;
+      _showToast(result.violation.message);
+      return;
+    }
+    $restoreOutput.value = result.text;
+    _lastAcceptedRestoreValue = $restoreInput.value;
+    if ($restoredCount) $restoredCount.textContent = String(result.restored);
+    if ($unresolvedCount) $unresolvedCount.textContent = String(result.unresolved);
+  }
+
+  function _clearState() {
+    _resetMappingState();
+    if (_storageAvailable()) sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  function _clearAll(button) {
+    $sourceInput.value = '';
+    $maskedOutput.value = '';
+    $restoreInput.value = '';
+    $restoreOutput.value = '';
+    _lastAcceptedSourceValue = '';
+    _lastAcceptedRestoreValue = '';
+    _clearState();
+    if ($modeLabel) $modeLabel.textContent = '空';
+    if ($restoredCount) $restoredCount.textContent = '0';
+    if ($unresolvedCount) $unresolvedCount.textContent = '0';
+    _renderMappings();
+    _setCopyButtonFeedback(button, 'クリアしました');
+  }
+
+  function _discardMap() {
+    _clearState();
+    _renderMappings();
+    _updateMask();
+    _updateRestore();
+    _showToast('対応表を破棄しました。必要な復元が残っていないか確認してください。');
+  }
+
+  function _setCopyButtonFeedback(button, message) {
+    if (!button) return;
+    if (!button.dataset.originalLabel) button.dataset.originalLabel = button.textContent;
+    button.textContent = message;
+    window.clearTimeout(_copyFeedbackTimers.get(button));
+    const timer = window.setTimeout(() => {
+      button.textContent = button.dataset.originalLabel;
+      _copyFeedbackTimers.delete(button);
+    }, 1600);
+    _copyFeedbackTimers.set(button, timer);
+  }
+
+  async function _copyFrom(textarea, button) {
+    const value = textarea.value;
+    if (!value) {
+      _setCopyButtonFeedback(button, 'コピー対象なし');
+      return;
+    }
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        textarea.focus();
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.setSelectionRange(0, 0);
+        if (!copied) throw new Error('Copy command failed');
+      }
+      _setCopyButtonFeedback(button, 'コピーしました');
+    } catch (_) {
+      _setCopyButtonFeedback(button, 'コピー失敗');
+    }
+  }
+
+  function _showToast(message) {
+    window.clearTimeout(_toastTimer);
+    $toast.textContent = message;
+    $toast.hidden = false;
+    _toastTimer = window.setTimeout(() => {
+      $toast.hidden = true;
+    }, 2600);
+  }
+
+  function _bindEvents() {
+    $sourceInput.addEventListener('input', _updateMask);
+    $restoreInput.addEventListener('input', _updateRestore);
+    $('#clear-source-btn').addEventListener('click', () => {
+      $sourceInput.value = '';
+      _updateMask();
+    });
+    $('#clear-all-btn').addEventListener('click', (event) => _clearAll(event.currentTarget));
+    $('#copy-masked-btn').addEventListener('click', (event) => _copyFrom($maskedOutput, event.currentTarget));
+    $('#copy-restored-btn').addEventListener('click', (event) => _copyFrom($restoreOutput, event.currentTarget));
+    $('#discard-map-btn').addEventListener('click', _discardMap);
+  }
+
+  _loadMappings();
+  _bindEvents();
+  _renderMappings();
+  _updateRestore();
+
+  window.__MaskingerTest = {
+    mask(input) {
+      return _maskText(input);
+    },
+    restore(input) {
+      return _restoreText(input);
+    },
+    mappings() {
+      return _state._mappings.map((item) => ({ ...item }));
+    },
+    limits() {
+      return {
+        inputMaxBytes: MASKINGER_INPUT_MAX_BYTES,
+        inputMaxLines: MASKINGER_INPUT_MAX_LINES,
+        maxMappings: MASKINGER_MAX_MAPPINGS,
+        mappingRenderMaxRows: MASKINGER_MAPPING_RENDER_MAX_ROWS,
+        mappingOriginalMaxBytes: MASKINGER_MAPPING_ORIGINAL_MAX_BYTES,
+        storageMaxBytes: MASKINGER_STORAGE_MAX_BYTES
+      };
+    },
+    validateInput(input) {
+      return _inputLimitViolation(input);
+    },
+    replaceMappings(items) {
+      const result = _replaceMappingsFromItems(items);
+      _saveMappings();
+      _renderMappings();
+      _updateRestore();
+      return result;
+    },
+    clear() {
+      _clearAll();
+    }
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeafNote QA Test Report</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f8f5;
+    --surface: #ffffff;
+    --text: #202824;
+    --muted: #5d6862;
+    --border: #d9dfd8;
+    --p0: #b42318;
+    --p1: #b54708;
+    --p2: #175cd3;
+    --ok: #027a48;
+    --warn: #b54708;
+    --fail: #b42318;
+    --info: #175cd3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--bg);
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 20px 56px; }
+  h1 { margin: 0 0 6px; font-size: 28px; }
+  h2 { margin: 28px 0 10px; font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  p { margin: 8px 0; }
+  .summary, .risk-callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .risk-callout { border-left: 6px solid var(--p1); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 14px; }
+  .metric { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .metric strong { display: block; font-size: 24px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; min-width: 760px; }
+  th, td { border-bottom: 1px solid var(--border); padding: 10px 12px; vertical-align: top; text-align: left; }
+  th { background: #eef3ee; font-weight: 700; }
+  tr:last-child td { border-bottom: 0; }
+  code, .path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+  .badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .p0 { background: var(--p0); }
+  .p1 { background: var(--p1); }
+  .p2 { background: var(--p2); }
+  .ok { background: var(--ok); }
+  .warn { background: var(--warn); }
+  .fail { background: var(--fail); }
+  .info { background: var(--info); }
+  .muted { color: var(--muted); }
+  @media print {
+    body { background: #fff; }
+    main { max-width: none; padding: 16px; }
+    .table-wrap { overflow: visible; }
+    table { min-width: 0; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>QA / Test Architecture / Bug Hunting Report</h1>
+  <p class="muted">対象リポジトリ: <span class="path">leaf-note</span></p>
+  <p class="muted">このページは過去のQA調査時点の記録です。今回の改善内容と検証結果は <a href="./product-quality-2026-09-11.md">2026-09-11 の製品品質レポート</a> を参照してください。</p>
+
+  <section class="summary">
+    <h2>1. Executive Summary</h2>
+    <p>LeafNote、Maskinger、index 配布ページ、既存 CDP テスト基盤、package scripts を調査し、P0/P1 リスクをユーザーフロー単位で抽出しました。追加したテストは、LeafNote の危険な block id、IME composition、viewport レイアウト、remote image export の private network fetch 防止、重複 dialog resolver、Maskinger のマスク/復元、SQL、sessionStorage、XSS/overflow、広範な秘匿値コーパス、旧対応表復元、index コピー UI です。</p>
+    <div class="metrics">
+      <div class="metric"><span>追加テスト</span><strong>12</strong></div>
+      <div class="metric"><span>検出バグ</span><strong>9</strong></div>
+      <div class="metric"><span>修正バグ</span><strong>9</strong></div>
+      <div class="metric"><span>残 P0/P1 リスク</span><strong>2</strong></div>
+      <div class="metric"><span>LeafNote coverage</span><strong>94.5%</strong></div>
+    </div>
+    <div class="risk-callout">
+      <p><strong>まだ残っている P0/P1 リスク:</strong> mutation testing は未導入、in-app Browser の file URL ポリシーによりスクリーンショット取得は未実施です。今回確認できた実装バグはすべて再発防止テスト付きで修正済みです。</p>
+      <p><strong>次にやるべきこと:</strong> targeted mutation testing の小スクリプト化、localhost 配信でのスクリーンショット QA、実ログ由来の Maskinger fixture 拡充。</p>
+    </div>
+  </section>
+
+  <h2>2. 自動抽出した機能一覧</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>優先度</th><th>機能</th><th>関連ファイル</th><th>リスク理由</th><th>推奨テスト種別</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge p0">P0</span></td><td>LeafNote 保存/復元/起動 state 選択</td><td class="path">LeafNote.html, tests/run-browser.mjs</td><td>local-first データの喪失、古い state 上書き、修復時の意図しない保存。</td><td>fault injection integration, coverage</td></tr>
+      <tr><td><span class="badge p0">P0</span></td><td>LeafNote Markdown/HTML paste/import/export</td><td class="path">LeafNote.html</td><td>XSS、過大入力、構造破損、セルフ contained HTML の壊れ。</td><td>unit, integration, boundary/fuzz</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>LeafNote エディタ IME 入力フロー</td><td class="path">LeafNote.html</td><td>日本語変換中 Enter/Escape による誤 submit、block 分割、dialog close。</td><td>CDP integration, keyboard event</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>LeafNote block id と selection/table 操作</td><td class="path">LeafNote.html</td><td>保存済み/tampered id が CSS selector を壊すと選択、focus、table 操作が不能。</td><td>integration, security edge</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>LeafNote responsive/overlay/touch UI</td><td class="path">LeafNote.html</td><td>モバイルで横スクロール、モーダル見切れ、hover 依存操作不能。</td><td>viewport E2E, computed style, bounding box</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>LeafNote self-contained HTML export</td><td class="path">LeafNote.html</td><td>untrusted note の remote image URL が local/private network へ fetch される可能性。</td><td>security unit, fetch stub</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>LeafNote dialog resolver</td><td class="path">LeafNote.html</td><td>confirm/prompt/alert が重なると古い Promise が未解決で残る可能性。</td><td>integration, async race</td></tr>
+      <tr><td><span class="badge p0">P0</span></td><td>Maskinger マスク/復元/対応表</td><td class="path">Maskinger.html</td><td>秘匿値漏れ、復元不能、対応表 XSS、sessionStorage persistence 破綻。</td><td>unit, integration, security</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>Maskinger SQL/CODE/TEXT 自動判定</td><td class="path">Maskinger.html</td><td>SQL 識別子や値の mask 漏れ、placeholder の再マスク。</td><td>fixture unit, regression corpus</td></tr>
+      <tr><td><span class="badge p2">P2</span></td><td>index 配布ページ source copy</td><td class="path">index.html</td><td>埋め込み LeafNote source 不一致、copy toast/clipboard 失敗。</td><td>light UI integration</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>3. 追加したテスト</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>種別</th><th>対象</th><th>テスト内容</th><th>目的</th><th>結果</th></tr></thead>
+    <tbody>
+      <tr><td>Integration</td><td>LeafNote block id</td><td>selector を壊す文字を含む block id で selection と table Tab 操作を実行。</td><td>CSS selector injection/DOMException による操作不能を検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Integration</td><td>LeafNote IME</td><td><code>keyCode/which === 229</code> の Enter/Escape を block、title、document name、dialog、search に投入。</td><td>IME 変換中の誤 submit/close/split を検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>E2E-like UI</td><td>LeafNote responsive</td><td>320/375/390低高さ/390/430/768/1024/1280 で scrollWidth、bounding box、modal 収まり、touch hover 代替を検証。</td><td>横溢れ、画面外モーダル、モバイル操作不能を検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Security Unit</td><td>LeafNote remote image export</td><td>loopback、localhost、link-local、private IPv4、IPv6 loopback、public URL を混ぜ、fetch stub の呼び出し先を検証。</td><td>HTML export が private/local network へ fetch しないことを検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Integration</td><td>LeafNote dialogs</td><td>confirm の表示中に別 confirm、prompt の表示中に alert を出し、置換された resolver が確実に settle することを検証。</td><td>重なった dialog による未解決 Promise と後続処理停止を検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Unit</td><td>Maskinger TEXT</td><td>API key、GitHub token、JWT、email、URL、電話、住所、重複 Bearer token を mask/restore。</td><td>重複 placeholder と復元不全、秘匿値漏れを検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Unit</td><td>Maskinger SQL</td><td>SQL と MyBatis 風 XML タグで table/column/value/param を mask/restore。</td><td>SQL 構造保持と秘匿値 mask を検証。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Unit</td><td>Maskinger broad corpus</td><td>AWS、Google、Slack、Stripe、DB URL、UUID、SSN、カード、郵便、IP、MAC、口座、氏名、組織、住所を mask/restore。</td><td>部分マスク漏れ、分類順序、秘匿値 false negative を検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Integration</td><td>Maskinger persistence</td><td>UI 入力、sessionStorage 保存、reload 後の復元、全クリアを検証。</td><td>タブ内対応表の永続化と削除を検証。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Integration</td><td>Maskinger legacy mappings</td><td>壊れた旧 sessionStorage 対応表を reload し、重複/無効 placeholder の除外と入れ子 placeholder 復元を検証。</td><td>過去バージョンで生成された対応表の復元不能を検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Security/UI</td><td>Maskinger mapping table</td><td>hostile original、320px viewport、mapping table overflow、textarea rect を検証。</td><td>XSS とモバイル横溢れを検出。</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Integration</td><td>index copy source</td><td>clipboard fallback の成功/失敗を操作し、toast、disabled、aria-busy が復帰することを検証。</td><td>配布ページの主要操作が失敗時に固まらないことを検証。</td><td><span class="badge ok">成功</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>4. 見つけたバグ</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>優先度</th><th>バグ</th><th>原因</th><th>影響</th><th>状態</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge p1">P1</span></td><td>IME composition 中の Enter/Escape が一部で通常キー扱いになる。</td><td><code>isComposing</code> のみ見ており、macOS/Chrome IME の <code>keyCode/which 229</code> や document capture Escape を考慮していなかった。</td><td>日本語変換中に block 分割、title blur、dialog/search close が起きる可能性。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>selector-breaking block id で選択/focus/table 操作が壊れる。</td><td>保存済み block id を CSS selector 文字列へ直接補間。</td><td>tampered/localStorage state で DOMException または別要素選択。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p0">P0</span></td><td>Maskinger が自分で生成した <code>MASK_SECRET_0001</code> を再マスクする。</td><td>Authorization/Bearer の後続 regex が placeholder を secret token として再処理。</td><td>対応表に placeholder 自体が original として入り、復元が連鎖的に壊れる。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p0">P0</span></td><td>URL 内 token が先にマスクされ、URL 対応表 original に placeholder が混入する。</td><td>key/value secret 検出が URL 検出より先に走っていた。</td><td>復元後の URL に <code>MASK_SECRET_*</code> が残る。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p0">P0</span></td><td>旧 sessionStorage 対応表の入れ子 placeholder を復元しきれない。</td><td>復元が単一パスで、旧バグ由来の <code>MASK_URL_0001</code> → URL 内 <code>MASK_SECRET_0001</code> を再解決しなかった。</td><td>復元後テキストに placeholder が残り、ユーザーが秘匿値を完全復元できない。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p0">P0</span></td><td>16桁カード番号が 12桁 ID として先に部分マスクされる。</td><td>12桁 PII_ID regex が Luhn カード検出より先に実行されていた。</td><td>カード番号末尾 4 桁が平文で残る。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>MAC アドレスが IPv6 として分類される。</td><td>IPv6 regex が MAC regex より先に実行されていた。</td><td>mask はされるが、対応表の種類が誤り監査や復元確認が紛らわしい。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>HTML export が private/local network の remote image URL を fetch できる。</td><td>remote image inline 化で http/https の raster-looking URL を fetch 前に network 範囲判定していなかった。</td><td>untrusted note を export したユーザーのブラウザから loopback/private network へリクエストが出る。</td><td><span class="badge ok">修正済み</span></td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>dialog が重なると古い resolver が未解決で残る。</td><td><code>dialogResolver</code> が単一グローバルで、新しい dialog が既存 resolver を置き換えていた。</td><td>先に開始した confirm/prompt が永久に settle せず、後続フローが止まる可能性。</td><td><span class="badge ok">修正済み</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>5. 修正したバグ</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>バグ</th><th>修正内容</th><th>追加した再発防止テスト</th><th>結果</th></tr></thead>
+    <tbody>
+      <tr><td>IME key handling</td><td><code>isIMEComposingEvent</code> を追加し、<code>isComposing</code>、<code>keyCode</code>、<code>which</code> を一元判定。document capture Escape も composition 中は無視。</td><td>IME composition keyCode 229 does not submit dialogs or split editing targets</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>危険な block id selector</td><td><code>cssEscape</code>、<code>blockSelectorById</code>、<code>blockEditableSelectorById</code> を追加し、動的 selector を escape。</td><td>tampered block ids with selector-breaking characters remain operable</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Maskinger placeholder 再マスク</td><td><code>PLACEHOLDER_VALUE_RE</code> と <code>_isPlaceholderValue</code> を追加し、Bearer/Authorization/key-value/number 経路で placeholder を再処理しない。</td><td>Maskinger masks repeated secrets deterministically and restores with current tab mappings</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>Maskinger URL nested placeholder</td><td>URL mask を key/value secret mask より先に実行し、URL original に placeholder を入れない。</td><td>Maskinger masks repeated secrets deterministically and restores with current tab mappings</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>旧対応表の復元不全</td><td>ロード時に無効/重複 placeholder と placeholder 値そのものの original を除外し、復元は最大 8 パスで入れ子 placeholder を安全に解決。</td><td>Maskinger ignores stale placeholder mappings and restores nested legacy placeholders after reload</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>カード番号の部分漏れ</td><td>Luhn カード検出を 12桁 PII_ID 検出より先に実行。</td><td>Maskinger broad sensitive corpus masks and restores without raw leakage</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>MAC 誤分類</td><td>MAC アドレス検出を IPv6 検出より先に実行。</td><td>Maskinger broad sensitive corpus masks and restores without raw leakage</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>private/local remote image fetch</td><td><code>isPrivateNetworkUrl</code> を追加し、HTML export の remote image inline fetch 前に loopback/private/link-local/localhost を拒否。</td><td>remote image export refuses private and local network fetch targets</td><td><span class="badge ok">成功</span></td></tr>
+      <tr><td>overlapping dialog resolver</td><td>新しい dialog を開く前に既存 dialog resolver を <code>null</code> で settle し、未解決 Promise を残さない。</td><td>overlapping dialogs settle the replaced resolver before showing the next dialog</td><td><span class="badge ok">成功</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>6. Coverage結果</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>対象</th><th>Line Coverage</th><th>Branch Coverage</th><th>未カバーリスク</th><th>評価</th></tr></thead>
+    <tbody>
+      <tr><td>LeafNote.html</td><td>関数 coverage 1010/1069 (94.5%)</td><td>CDP precise coverage のため branch coverage 数値なし</td><td>inline toolbar 細部、ブラウザ API 失敗、rare UI branches。</td><td><span class="badge ok">P1 重要分岐は追加検証済み</span></td></tr>
+      <tr><td>Maskinger.html</td><td>専用 coverage 集計なし</td><td>未計測</td><td>今回 runner 接続済みだが coverage 集計は LeafNote URL のみ。</td><td><span class="badge warn">要改善</span></td></tr>
+      <tr><td>追加テスト対象</td><td>全 12 追加テスト成功</td><td>境界/異常系を含むが branch 数値なし</td><td>実ログ由来の Maskinger fixture は継続拡充余地あり。</td><td><span class="badge ok">実バグ検出済み</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>7. Mutation Testing結果</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>対象</th><th>Mutation Score</th><th>Survived Mutants</th><th>対応</th><th>残リスク</th></tr></thead>
+    <tbody>
+      <tr><td>全体</td><td>未実行</td><td>未計測</td><td><code>test:mutation</code> script と mutation tool が未定義。単一巨大 HTML + CDP テスト構成のため full mutation はコストが高い。</td><td><span class="badge warn">P1</span> sanitizer、URL、Maskinger detector の survived mutant が推定される。</td></tr>
+      <tr><td>代替確認</td><td>該当なし</td><td>該当なし</td><td>境界値、異常系、IME、selector、XSS、responsive、private network fetch、dialog race、秘匿値コーパスを追加し、実バグ 9 件を kill する regression test とした。</td><td>targeted mutation script 化が次ステップ。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>8. レスポンシブ / UI / IME 検証結果</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>対象</th><th>検証viewport / 入力条件</th><th>検証内容</th><th>結果</th><th>残リスク</th></tr></thead>
+    <tbody>
+      <tr><td>LeafNote responsive</td><td>320x568, 375x667, 390x520, 390x844, 430x932, 768x1024, 1024x768, 1280x720</td><td><code>scrollWidth</code>、<code>getBoundingClientRect()</code>、search/theme/trash/dialog modal、long Japanese/long English/table/image caption、touch hover controls。</td><td><span class="badge ok">横スクロールなし、modal 画面内、touch controls visible</span></td><td>in-app Browser screenshot は file URL policy で未取得。</td></tr>
+      <tr><td>LeafNote IME</td><td>keyCode 229 / which 229, Enter/Escape</td><td>block、page title、document name、prompt dialog、search の誤 submit/close/split を検証。</td><td><span class="badge ok">意図しない登録/close なし</span></td><td>実 OS IME での手動確認は未実施。</td></tr>
+      <tr><td>Maskinger mobile</td><td>320x640 touch emulation</td><td>mapping table の内部横スクロール、body/document overflow、textarea 画面外、hostile original の escaping。</td><td><span class="badge ok">横溢れなし、mapping table 内に収まる、XSS なし</span></td><td>375/768/1280 の Maskinger UI は自動スクリーンショット未実施。</td></tr>
+      <tr><td>index copy UI</td><td>file URL / clipboard fallback success-failure</td><td>Copy SourceCode 押下時の toast、disabled、aria-busy、失敗後復帰を検証。</td><td><span class="badge ok">成功/失敗とも stuck 状態なし</span></td><td>実クリップボードへの書き込みは安全な fake で代替。</td></tr>
+      <tr><td>スクリーンショット確認</td><td>in-app Browser</td><td>LeafNote/Maskinger を file URL で開いて screenshot を保存しようとした。</td><td><span class="badge warn">未対応</span> URL policy により file URL 表示が拒否。</td><td>P1: 視覚 QA は CDP 実寸検証で代替。localhost 配信での目視確認を次回実施。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>9. まだ危険な未カバー箇所</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>優先度</th><th>箇所</th><th>リスク</th><th>理由</th><th>次の対応</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge p1">P1</span></td><td>Mutation testing</td><td>sanitizer や Maskinger の条件反転が survived しても検出不能。</td><td>mutation runner 未導入。</td><td>小さな targeted mutation script を追加。</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>実ブラウザ screenshot</td><td>重なりや視覚密度の最終目視が不足。</td><td>in-app Browser の file URL policy で未取得。</td><td>localhost static server 経由で screenshot QA を実行。</td></tr>
+      <tr><td><span class="badge p2">P2</span></td><td>Maskinger detector corpus 拡充</td><td>実ログ/API key/SQL 方言で未知の mask 漏れ。</td><td>今回 broad corpus は代表ケースで、実サービス固有 token までは網羅していない。</td><td>秘匿値 fixture corpus と false positive/negative property-like test を継続追加。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>10. 実行したコマンドと結果</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>コマンド</th><th>結果</th><th>補足</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run test:unit</code></td><td><span class="badge ok">成功</span></td><td>LeafNote unit + Maskinger unit が成功。</td></tr>
+      <tr><td><code>npm run test:integration</code></td><td><span class="badge ok">成功</span></td><td>LeafNote integration + responsive/IME + Maskinger UI integration が成功。</td></tr>
+      <tr><td><code>npm test</code></td><td><span class="badge ok">成功</span></td><td>全テスト成功。終了時に残っていた Node handle も runner 側で終了保証済み。</td></tr>
+      <tr><td><code>npm run test:coverage</code></td><td><span class="badge ok">成功</span></td><td>LeafNote 関数 coverage 1010/1069 (94.5%)。</td></tr>
+      <tr><td><code>npm run lint</code></td><td><span class="badge warn">未対応</span></td><td><code>package.json</code> に script 未定義。</td></tr>
+      <tr><td><code>npm run typecheck</code></td><td><span class="badge warn">未対応</span></td><td><code>package.json</code> に script 未定義。</td></tr>
+      <tr><td><code>npm run build</code></td><td><span class="badge warn">未対応</span></td><td><code>package.json</code> に script 未定義。</td></tr>
+      <tr><td><code>npm run test:mutation</code></td><td><span class="badge warn">未対応</span></td><td><code>package.json</code> に script 未定義。</td></tr>
+      <tr><td>in-app Browser screenshot</td><td><span class="badge warn">未実行</span></td><td>file URL が Browser URL policy で拒否。CDP viewport 実寸検証で代替。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>11. 変更ファイル一覧</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ファイル</th><th>変更内容</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td class="path">LeafNote.html</td><td>IME composition 判定 helper、CSS selector escape helper、private/local network URL 判定、dialog resolver 置換時の settlement、該当 keyboard/selector/export/dialog 経路の利用。</td><td>IME 誤操作、selector-breaking id、remote image export SSRF 的挙動、dialog race の回帰防止。</td></tr>
+      <tr><td class="path">Maskinger.html</td><td>placeholder 判定 helper、Bearer/Authorization 再マスク防止、URL mask 順序変更、旧対応表ロード検証、入れ子復元、カード/MAC 検出順序修正。</td><td>placeholder 連鎖、旧対応表復元不全、カード部分漏れ、MAC 誤分類を修正。</td></tr>
+      <tr><td class="path">tests/run-browser.mjs</td><td>Maskinger page runner、6件の Maskinger tests、5件の LeafNote risk tests、1件の index copy UI test、multi-page runner 対応、終了時の process exit 保証。</td><td>P0/P1 の実バグ検出テストを追加し、総合テストの teardown hang を防止。</td></tr>
+      <tr><td class="path">index.html</td><td>現行 LeafNote.html を <code>&lt;</code> エスケープ済み JSON として埋め込み直し、source 一致を確認。</td><td>配布ページの embedded source と本体の同期、<code>&lt;/script&gt;</code> による JSON 破損防止。</td></tr>
+      <tr><td class="path">reports/qa-test-report.html</td><td>本 HTML レポートを追加。</td><td>調査、テスト、バグ、残リスク、実行結果の納品物。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>12. 次にやるべきこと</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>優先度</th><th>対応内容</th><th>理由</th><th>推奨担当</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge p1">P1</span></td><td>targeted mutation testing script を作る。</td><td>sanitizer/URL/Maskinger 条件の survived mutant を定量化する。</td><td>Test Architect</td></tr>
+      <tr><td><span class="badge p1">P1</span></td><td>localhost 配信で Browser screenshot QA を実行する。</td><td>file URL policy を避け、実視覚確認を補完する。</td><td>UI QA</td></tr>
+      <tr><td><span class="badge p2">P2</span></td><td>Maskinger detector corpus を実ログ/API key/SQL 方言で増やす。</td><td>今回の broad corpus は代表値を追加済みだが、サービス固有 token には継続対応が必要。</td><td>QA + Security</td></tr>
+    </tbody>
+  </table></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "leaf-note",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/sync-distribution.mjs",
+    "check:distribution": "node scripts/sync-distribution.mjs --check",
+    "pretest": "npm run check:distribution",
+    "test": "node tests/run-browser.mjs all",
+    "test:unit": "node tests/run-browser.mjs unit",
+    "test:integration": "node tests/run-browser.mjs integration",
+    "test:coverage": "node tests/run-browser.mjs coverage"
+  }
+}

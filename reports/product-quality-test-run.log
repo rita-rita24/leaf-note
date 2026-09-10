@@ -1,0 +1,157 @@
+
+> leaf-note@0.0.0 pretest
+> npm run check:distribution
+
+
+> leaf-note@0.0.0 check:distribution
+> node scripts/sync-distribution.mjs --check
+
+Distribution check passed: index.html embeds the current LeafNote.html.
+
+> leaf-note@0.0.0 test
+> node tests/run-browser.mjs all
+
+ok - normalization preserves export revisions when the system clock moves back
+ok - sanitizeHTML strips dangerous HTML while keeping safe inline markup
+ok - sanitizeHTML handles deeply nested HTML without recursive traversal
+ok - state normalization caps oversized single text fields before render
+ok - markdown inline conversion preserves safe marks and rejects unsafe links
+ok - markdown inline conversion escapes delimiter collisions
+ok - htmlToMarkdownInline falls back to plain text for overly deep DOM
+ok - markdown parser covers rich block structures and exports stable markdown
+ok - markdown serialization shares nested byte budgets and avoids fence collisions
+ok - markdown serialization preserves escaped text markers and image captions
+ok - markdown export round-trips inline literal markers without accidental formatting
+ok - markdown page title export is single-line and preserves trailing hashes
+ok - markdown export imports files, toggle headings, rich table cells, rich captions, math, and preserved blanks
+ok - markdown compatibility blocks serialize while native structures parse to dedicated blocks
+ok - governance and spec markdown helpers parse metadata and serialize fields
+ok - DB spec columns are capped during normalization and helper additions
+ok - state normalization preserves native governance and spec block shapes
+ok - state normalization repairs corrupt pages and sanitizes persisted content
+ok - state normalization clamps table size and repairs duplicate block ids
+ok - state normalization caps deeply nested block children
+ok - page hierarchy depth is capped and page lifecycle helpers avoid recursion
+ok - state normalization caps saved page count and repairs page references
+ok - state normalization caps saved block count per page and keeps rendering bounded
+ok - runtime page creation and duplication respect the page capacity
+ok - last live page trash move keeps a live current page at page capacity
+ok - runtime block insertion helpers respect the per-page block capacity
+ok - startup lossy repair snapshot is not persisted before user changes
+ok - image safety policy accepts only raster image sources
+ok - network image URL policy rejects private and IPv4-mapped local targets
+ok - state normalization breaks cyclic page parent links
+ok - startup revision chooses the newest persisted state source
+ok - file helper functions normalize names, sizes, data URLs, and reset blocks
+ok - local embedded data total helpers estimate, warn, and trim excess data URLs
+ok - local image and attachment size limits warn and reject before FileReader
+ok - mermaid previews render supported diagram families and fallback outlines
+ok - mermaid previews fall back for oversized sources and excessive elements
+ok - trash auto purge days are normalized and negative values do not purge
+ok - startup locale and trash purge helpers mutate nested persisted data safely
+ok - save fallback status appears when IndexedDB save fails
+ok - async saves discard stale snapshots after a delayed database open
+ok - FileReader failure paths reject image, attachment, and export conversions
+ok - loadStateAsync tolerates IndexedDB open and read request failures
+ok - remote image export inlines successes and reports failures
+ok - remote image export refuses private and local network fetch targets
+ok - remote image export enforces total embedded data cap and redirect target safety
+ok - remote image export limits inline fetch count and leaves skipped links intact
+ok - remote image fetch rejects oversized and timed-out images
+ok - remote image response streams are capped while reading
+ok - self HTML export source fetch validates body, size, and timeout before adoption
+ok - search helpers cap result count and body scan budgets
+ok - search helpers include rich text display text, tables, captions, files, and definitions
+ok - state payload parsing enforces UTF-8 byte limits before JSON.parse and keeps IndexedDB fallback
+ok - state payload save guards reject oversized snapshots before storage writes
+ok - undo history skips oversized snapshots and trims total bytes
+ok - index embedded LeafNote source matches LeafNote.html
+ok - mobile sidebar hides inaccessible controls and returns to the note after navigation
+ok - settings preserve keyboard focus and nested dialogs isolate background controls
+ok - visible import and help controls work without keyboard shortcuts
+ok - single text field limits sync interactive DOM edits and page creation
+ok - HTML-only paste into a block is sanitized and saved
+ok - raw text blocks converted to rich blocks render literal HTML safely
+ok - block type conversion preserves hidden payloads, content, and children visibly
+ok - block type conversion preserves dedicated metadata visibly and clears hidden fields
+ok - table cells and image captions use the sanitized paste path
+ok - markdown paste replaces an empty block with parsed native blocks
+ok - plain JSON and tag-like paste stay inline instead of Markdown blocks
+ok - plain multiline paste splits sanitized text into sibling blocks
+ok - clipboard paste limits warn and reject oversized generated content
+ok - raw and code paste limits reject oversized plain text without mutating state
+ok - markdown paste rejects excessive generated table cells without mutating state
+ok - page title paste stores plain text only
+ok - keyboard editing converts headings, inserts blocks, and removes empty siblings
+ok - page lifecycle operations delete, restore, purge, and keep navigation valid
+ok - dialogs resolve alert, confirm, prompt, and save document flows
+ok - overlapping dialogs settle the replaced resolver before showing the next dialog
+ok - search modal finds content, opens matches, and creates missing pages
+ok - trash modal retention, restore, and confirmed purge flows work through the UI
+ok - theme and shortcuts modals render controls and update theme state
+ok - app chrome keyboard paths run through sidebar, search, shortcuts, theme, and dialogs
+ok - storage save and load round-trip the current state
+ok - markdown and attachment downloads create safe object URLs and revoke them
+ok - file and image helpers read files and replace or insert blocks
+ok - rich block controls update code, todo, toggle, toc, and raw previews
+ok - rare block renderers and media drop zones respond through DOM events
+ok - slash menu, block context menu, and icon picker drive real UI actions
+ok - block drag, slash keyboard, inline toolbar, and icon picker edge controls work
+ok - max-depth toggles do not create hidden child blocks
+ok - table controls and keyboard navigation resize table blocks
+ok - page context menu creates children, duplicates trees, and confirms trash moves
+ok - global undo and redo restore block edits through the app history stack
+ok - block selection copy and cut preserve markdown and mutate state safely
+ok - block selection copy and cut preserve fenced code payloads
+ok - block selection copy and cut preserve markdown delimiter literals
+ok - block selection clipboard event failures do not delete selected blocks
+ok - markdown export and selection clipboard limits reject oversized payloads safely
+ok - inline formatting and links fall back safely when execCommand is unavailable
+ok - paste and code Tab use Range insertion when execCommand fails
+ok - keyboard block copy and cut survive throwing or missing execCommand
+ok - keyboard cut fallback deletes selected blocks only after clipboard write succeeds
+ok - code block copy falls back and reports failure without throwing
+ok - markdown import creates a new sanitized page from a selected file
+ok - markdown import rejects oversized files and reports read errors
+ok - markdown import enforces line, block, and table cell limits before creating pages
+ok - markdown import refuses to create a page at the page capacity
+ok - self-contained HTML export embeds sanitized state and revokes object URLs
+ok - self-contained HTML export aborts cleanly when remote image failures are cancelled
+ok - self-contained HTML export can keep excessive remote image links without fetching them
+ok - large image and attachment confirmations can be cancelled without mutating blocks
+ok - invalid attachment downloads show an alert and do not create object URLs
+ok - image URL picker supports cancel and accept flows through the prompt UI
+ok - image and file picker onchange handlers load selected files
+ok - governance and spec block controls sanitize and persist field edits
+ok - editing shortcuts and paste refuse to exceed the per-page block capacity
+ok - block drag moves refuse to exceed the nested block depth limit
+ok - DB spec columns add button is disabled at the row cap
+ok - global selection shortcuts select, delete, and escape-select blocks
+ok - shortcut commands, search ranking, merge backspace, and clipboard fallbacks execute
+ok - tampered block ids with selector-breaking characters remain operable
+ok - IME composition keyCode 229 does not submit dialogs or split editing targets
+ok - critical LeafNote layout stays inside mobile tablet and desktop viewports
+ok - language selection and theme reset update live UI without touching page content
+ok - competing tabs preserve both edits and block stale lifecycle saves (IndexedDB)
+ok - competing tabs preserve both edits and block stale lifecycle saves (localStorage fallback)
+ok - competing tabs preserve both edits and block stale lifecycle saves (mixed stores)
+ok - IndexedDB read errors, aborts, and synchronous put failures close connections and reach fallback
+ok - undo and redo stay dirty until saved and outrank exported snapshots after reopening
+ok - an unrelated exported document opens its own content without replacing browser storage and can still export
+ok - Maskinger masks repeated secrets deterministically and restores with current tab mappings
+ok - Maskinger SQL mode masks identifiers and values while preserving SQL structure
+ok - Maskinger broad sensitive corpus masks and restores without raw leakage
+ok - Maskinger limit helpers enforce input and mapping boundaries
+ok - Maskinger UI persists mappings in sessionStorage and restores after reload
+ok - Maskinger rejected oversized source and restore inputs keep previous UI state
+ok - Maskinger ignores stale placeholder mappings and restores nested legacy placeholders after reload
+ok - Maskinger mapping cap rejects new placeholders and caps rendered rows
+ok - Maskinger normalizes oversized persisted mappings on reload
+ok - Maskinger rejects mapping creation when serialized storage would exceed cap
+ok - Maskinger keeps in-memory mappings consistent when sessionStorage save fails
+ok - Maskinger mapping table escapes hostile originals and confines narrow viewport overflow
+ok - Maskinger copy fallback reports execCommand false and throw as failure
+ok - index download and setup instructions fit phone, tablet and desktop widths
+ok - index download packages the current app and recovers from download failures
+ok - index failed copy removes its temporary field and restores focus
+ok - index copy source reports success and failure without stuck busy state
