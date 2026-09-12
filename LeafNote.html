@@ -1206,12 +1206,6 @@
     color: var(--text-primary);
     outline: none;
   }
-  .toc-level {
-    flex: 0 0 28px;
-    color: var(--text-tertiary);
-    font: 11px/1 "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-    font-variant-numeric: tabular-nums;
-  }
   .toc-text {
     min-width: 0;
     overflow: hidden;
@@ -9423,13 +9417,9 @@ function renderTOCBlock(block, el, parentList) {
       $link.href = '#' + getBlockAnchorId(heading.id);
       $link.dataset.targetBlockId = heading.id;
       $link.style.paddingInlineStart = `${8 + Math.max(0, heading.level - 1) * 14}px`;
-      const $level = document.createElement('span');
-      $level.className = 'toc-level';
-      $level.textContent = `H${heading.level}`;
       const $text = document.createElement('span');
       $text.className = 'toc-text';
       $text.textContent = heading.text;
-      $link.appendChild($level);
       $link.appendChild($text);
       $item.appendChild($link);
       $list.appendChild($item);
