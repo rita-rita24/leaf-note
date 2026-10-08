@@ -18,7 +18,7 @@ const maskingerUrl = `${pathToFileURL(maskingerPath).href}?test=1`;
 const indexPath = path.join(repoRoot, 'index.html');
 const indexUrl = `${pathToFileURL(indexPath).href}?test=1`;
 
-const validModes = new Set(['all', 'unit', 'integration', 'coverage']);
+const validModes = new Set(['all', 'unit', 'integration', 'coverage', 'index']);
 if (!validModes.has(mode)) {
   console.error(`Unknown test mode: ${mode}`);
   process.exit(1);
