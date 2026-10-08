@@ -446,12 +446,17 @@
 </script>
 
 <script>
-/* Initialize the unchanged tab icon after the usable page, retaining single-file portability. */
-{ const icon = document.createElement("link"); icon.rel = "icon"; icon.type = "image/png"; icon.setAttribute("sizes", "any"); // Reuse the icon already present in the downloadable single-file app.
+/* Resolve the shared icon only after a painted frame, keeping optional work
+   off the path to reading the page and using its copy/download controls. */
+function initializeSharedTabIcon() { const icon = document.createElement("link"); icon.rel = "icon"; icon.type = "image/png"; icon.setAttribute("sizes", "any"); // Reuse the icon already present in the downloadable single-file app.
   try {
     const iconSource = _getLeafNoteSource().match(/icon\.href = "(data:image\/png;base64,[^"]+)"/);
     if (iconSource) { icon.href = iconSource[1]; document.head.append(icon); }
   } catch (_) { /* Source errors are reported by the existing copy/download actions. */ } }
+requestAnimationFrame(() => {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(initializeSharedTabIcon, { timeout: 1000 });
+  else setTimeout(initializeSharedTabIcon, 0);
+});
 </script>
 </body>
 </html>

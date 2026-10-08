@@ -9822,7 +9822,7 @@ async function main() {
     const runLeafNoteIntegration = mode === 'integration' || mode === 'all' || mode === 'coverage';
     const runMaskingerUnit = runLeafNoteUnit;
     const runMaskingerIntegration = runLeafNoteIntegration;
-    const runIndexIntegration = runLeafNoteIntegration;
+    const runIndexIntegration = runLeafNoteIntegration || mode === 'index';
 
     if (runLeafNoteUnit) await runTestGroup(page, unitTests);
     if (runLeafNoteIntegration) await runTestGroup(page, integrationTests);
