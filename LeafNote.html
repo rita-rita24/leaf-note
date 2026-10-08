@@ -13553,7 +13553,8 @@ async function fetchSelfHtmlForExport(url = window.location.href, {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    // Always revalidate freshness; reuse the response body only when the server confirms it.
+    const res = await fetch(url, { cache: 'no-cache', signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const contentType = (res.headers.get('content-type') || '').split(';', 1)[0].trim().toLowerCase();
     if (contentType && contentType !== 'text/html' && contentType !== 'application/xhtml+xml') {
@@ -13904,7 +13905,31 @@ function renderSearchResults(q) {
   if (searchItems[0]) searchItems[0].classList.add('selected');
 }
 
+function _canRenderSearchImmediately() {
+  // Small text-only documents finish within the input event. Keep queued input
+  // coalescing for larger or structured documents, including pasted rich data.
+  let pageCount = 0, blockCount = 0, chars = 0;
+  for (const id in state.pages) {
+    const page = state.pages[id];
+    if (page.deletedAt) continue;
+    if (++pageCount > 12) return false;
+    chars += (page.title || '').length;
+    const stack = page.blocks.slice();
+    while (stack.length) {
+      const block = stack.pop();
+      if (++blockCount > 32 || GOVERNANCE_BLOCK_TYPES.has(block.type) || SPEC_BLOCK_TYPES.has(block.type) ||
+          ['image', 'file', 'table', 'definition_list'].includes(block.type) ||
+          block.definitions?.length || block.cells?.length || block.columns?.length) return false;
+      for (const key of ['content', 'label', 'refUrl', 'refTitle']) chars += (block[key] || '').length;
+      if (chars > 8192 || (block.children?.length || 0) > 32 - blockCount) return false;
+      if (block.children?.length) stack.push(...block.children);
+    }
+  }
+  return true;
+}
+
 function scheduleSearchResults(q) {
+  if (_canRenderSearchImmediately()) { renderSearchResults(q); return; }
   const token = ++_searchRenderToken;
   if (_searchRenderTimer) clearTimeout(_searchRenderTimer);
   _searchRenderTimer = setTimeout(() => {
