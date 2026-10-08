@@ -4510,10 +4510,13 @@ function _normalizeBlockTypeSpecificFields(block) {
   let changed = false;
   const clearIf = (condition, keys, clear) => {
     if (!condition) return;
-    const before = keys.map((key) => JSON.stringify(block[key])).join('|');
+    const before = keys.map((key) => block[key]);
     clear(block);
-    const after = keys.map((key) => JSON.stringify(block[key])).join('|');
-    if (before !== after) changed = true;
+    // Already-normalized fields need no repeated serialization. Keep the original
+    // JSON comparison for changed values, including malformed legacy fields.
+    if (keys.some((key, index) => before[index] !== block[key]) &&
+        before.map((value) => JSON.stringify(value)).join('|') !==
+        keys.map((key) => JSON.stringify(block[key])).join('|')) changed = true;
   };
   clearIf(block.type !== 'image', ['url', 'caption'], _clearImageFields);
   clearIf(block.type !== 'file', ['fileName', 'fileType', 'fileSize', 'fileDataUrl'], _clearFileFields);
@@ -4618,6 +4621,9 @@ function sanitizeHTML(html, { maxBytes = RICH_HTML_FIELD_MAX_BYTES } = {}) {
   if (typeof html !== 'string' || !html) return '';
   const limited = _truncateStringByUtf8Bytes(html, maxBytes);
   html = limited.value;
+  // With no markup, entities or parser-normalized characters, HTML serialization
+  // is exactly the cleaned text. All other inputs still take the full safe parser.
+  if (!/[<>&\r\u0000\u00a0\uD800-\uDFFF]/.test(html)) return sanitizePlainText(html);
   // Use a template to avoid executing scripts during parse.
   const tmp = document.createElement('template');
   tmp.innerHTML = html;
