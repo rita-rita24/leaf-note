@@ -4072,6 +4072,11 @@ function _utf8CodePointBytes(codePoint) {
 function _truncateStringByUtf8Bytes(value, maxBytes = RICH_HTML_FIELD_MAX_BYTES) {
   const text = String(value || '');
   const limit = Number.isFinite(+maxBytes) && +maxBytes >= 0 ? Math.floor(+maxBytes) : RICH_HTML_FIELD_MAX_BYTES;
+  // ASCII uses one byte per code unit; retain the code-point path for Unicode.
+  if (!/[^\x00-\x7f]/.test(text)) {
+    const end = Math.min(text.length, limit);
+    return { value: text.slice(0, end), bytes: end, truncated: end < text.length };
+  }
   let bytes = 0;
   let end = 0;
   for (let i = 0; i < text.length;) {
@@ -4774,6 +4779,10 @@ function _statePayloadLimitViolation(raw, maxBytes = STATE_PAYLOAD_MAX_BYTES) {
   // Every UTF-16 code unit needs at least one UTF-8 byte. This cheap check
   // rejects obviously oversized payloads without allocating another buffer.
   if (raw.length > limit) return true;
+  // UTF-8 needs at most three bytes per UTF-16 code unit (a surrogate pair
+  // uses four bytes for two units). This is a proof of fit, not an estimate.
+  if (raw.length <= Math.floor(limit / 3)) return false;
+  if (!/[^\x00-\x7f]/.test(raw)) return false;
   let bytes = 0;
   for (let i = 0; i < raw.length;) {
     const codePoint = raw.codePointAt(i);
@@ -5383,10 +5392,16 @@ async function _doSave({ force = false, maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
     : persist();
 }
 async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, trackStorageBaseline = false } = {}) {
+  let startupLocalSnapshot;
+  let startupLocalSignature;
   const readLocal = () => {
     try {
       const raw = localStorage.getItem(STATE_STORAGE_KEY);
-      if (trackStorageBaseline) _rememberStorageSnapshot('local', raw);
+      if (trackStorageBaseline) {
+        startupLocalSnapshot = raw;
+        _rememberStorageSnapshot('local', raw);
+        startupLocalSignature = _storageBaseline.local;
+      }
       if (raw) return _parseStatePayloadWithLimit(raw, maxPayloadBytes);
     } catch (_) {}
     return null;
@@ -5397,7 +5412,14 @@ async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, track
     const req = tx.objectStore(DB_STORE).get('app-state');
     return new Promise((r) => {
       req.onsuccess = () => {
-        if (trackStorageBaseline) _rememberStorageSnapshot('idb', req.result == null ? null : JSON.stringify(req.result));
+        if (trackStorageBaseline) {
+          const snapshot = req.result == null ? null : JSON.stringify(req.result);
+          // Both signatures are identical only when the full snapshots match.
+          // Keep this reuse local to this read, never across reads or tabs.
+          if (startupLocalSnapshot !== undefined && snapshot === startupLocalSnapshot)
+            _storageBaseline.idb = startupLocalSignature;
+          else _rememberStorageSnapshot('idb', snapshot);
+        }
         if (req.result) r(req.result);
         else r(null);
         db.close?.();
@@ -6595,8 +6617,32 @@ function switchPage(id) {
 /* ==================== Sidebar ==================== */
 const expandedPages = new Set();
 
+let _sidebarRenderKey = '';
+let _sidebarRenderTree = null;
+let _sidebarRenderFirstChild = null;
 function renderSidebar() {
-  const tree = $('#page-tree'); tree.innerHTML = '';
+  const tree = $('#page-tree');
+  // Track every value consumed by renderPageNode, including hidden descendants
+  // and capacity. Reuse only this DOM; editor content is still rendered freshly.
+  const renderKey = JSON.stringify([
+    state.uiLanguage, state.rootPages, Array.from(expandedPages),
+    Object.entries(state.pages).map(([id, page]) => [id, page.title, page.icon,
+      page.iconType, page.hasIcon, page.deletedAt, page.children])
+  ]);
+  if (renderKey === _sidebarRenderKey && tree === _sidebarRenderTree &&
+      tree.firstChild === _sidebarRenderFirstChild && tree.firstChild) {
+    syncPageCapacityControls();
+    tree.querySelectorAll('.page-item').forEach(item => {
+      const active = item.dataset.pageId === state.currentPageId;
+      item.classList.toggle('active', active);
+      if (active) item.setAttribute('aria-current', 'page');
+      else item.removeAttribute('aria-current');
+    });
+    return;
+  }
+  _sidebarRenderKey = renderKey;
+  _sidebarRenderTree = tree;
+  tree.innerHTML = '';
   syncPageCapacityControls();
   const livePages = state.rootPages.filter(pid => state.pages[pid] && !state.pages[pid].deletedAt);
   if (!livePages.length) { tree.innerHTML = `<div class="empty-state" style="padding:20px 0">${escapeHTML(t('pageMenu.emptyShelf'))}</div>`; return; }
@@ -6604,6 +6650,7 @@ function renderSidebar() {
   const fragment = document.createDocumentFragment();
   livePages.forEach(pid => fragment.appendChild(renderPageNode(pid, 0, canAddPage)));
   tree.appendChild(fragment);
+  _sidebarRenderFirstChild = tree.firstChild;
 }
 
 function renderIconHTML(v, t, sz) {
@@ -11726,6 +11773,7 @@ function _insertSanitizedClipboardPayload({ html = '', text = '' } = {}, target 
 
 function _utf8ByteLength(value) {
   const text = String(value || '');
+  if (!/[^\x00-\x7f]/.test(text)) return text.length;
   try { return new Blob([text]).size; }
   catch (_) {
     try { return new TextEncoder().encode(text).length; }

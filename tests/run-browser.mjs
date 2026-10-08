@@ -8189,9 +8189,13 @@ const integrationTests = [
           const file = new File([text], name, { type: 'text/markdown' });
           Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
           const promise = fileInput.onchange();
-          await delay();
-          let alertText = '';
+          let importSettled = false;
+          promise.then(() => { importSettled = true; }, () => { importSettled = true; });
           const overlay = document.querySelector('#dialog-overlay');
+          const deadline = performance.now() + 30000;
+          while (!importSettled && (!overlay || overlay.hidden) && performance.now() < deadline) await delay(10);
+          if (!importSettled && (!overlay || overlay.hidden)) throw new Error('Markdown import did not settle or show a notice');
+          let alertText = '';
           if (overlay && !overlay.hidden) {
             alertText = document.querySelector('#dialog-box').textContent;
             document.querySelector('#dialog-box [data-ok]').click();
