@@ -8886,7 +8886,7 @@ function attachDropHandlers(el, block) {
     ev.preventDefault();
     if (!draggingBlockId || draggingBlockId === block.id) return;
     const r = el.getBoundingClientRect(); const mid = r.top + r.height / 2;
-    if (moveBlock(draggingBlockId, block.id, ev.clientY < mid ? 'before' : 'after')) renderEditor();
+    moveBlockWithRender(draggingBlockId, block.id, ev.clientY < mid ? 'before' : 'after');
   });
 }
 
@@ -11245,6 +11245,23 @@ function canMoveBlockWithinDepthLimit(sid, tid, pos = 'after') {
   return target.depth + _blockSubtreeHeight(source.block, BLOCK_MAX_DEPTH + 1) <= BLOCK_MAX_DEPTH;
 }
 
+// A same-list move keeps each block's parent list and depth unchanged. Reuse
+// its live DOM (including media/editable state); structural moves use full render.
+function moveBlockWithRender(sid, tid, pos) {
+  const source = findBlockAndList(sid), target = findBlockAndList(tid);
+  const sourceEl = qs(blockSelectorById(sid)), targetEl = qs(blockSelectorById(tid));
+  const reuse = source && target && source.list === target.list && sourceEl && targetEl
+    && sourceEl.parentElement === targetEl.parentElement
+    && !qs('#blocks .block[data-type="toc"]');
+  if (!moveBlock(sid, tid, pos)) return false;
+  if (!reuse) { renderEditor(); return true; }
+  sourceEl.classList.remove('drop-above', 'drop-below', 'dragging');
+  targetEl.classList.remove('drop-above', 'drop-below');
+  targetEl.parentElement.insertBefore(sourceEl, pos === 'before' ? targetEl : targetEl.nextSibling);
+  updateNumberedList(qs('#blocks'));
+  scheduleBlockGutterPositions();
+  return true;
+}
 function moveBlock(sid, tid, pos) {
   const s = findBlockAndList(sid); if (!s) return false;
   const movedBlock = s.block;
@@ -14057,6 +14074,15 @@ const BlockSelection = (() => {
   let _dragStart = null;
   let _dragCurrent = null;
   let _autoScrollFrame = null;
+  let _selectionFrame = null;
+  function _flushSelectionFrame() {
+    if (_selectionFrame !== null) cancelAnimationFrame(_selectionFrame);
+    _selectionFrame = null;
+    if (_isDragging && _dragCurrent) _updateMarquee(_dragCurrent.x, _dragCurrent.y);
+  }
+  function _scheduleSelectionFrame() {
+    if (_selectionFrame === null) _selectionFrame = requestAnimationFrame(_flushSelectionFrame);
+  }
   const $marquee = document.getElementById('selection-marquee');
   const $editorScroll = document.getElementById('editor-scroll');
 
@@ -14129,6 +14155,7 @@ const BlockSelection = (() => {
       bottom,
       width: right - left,
       height: Math.max(0, bottom - top),
+      scrollOffset: $editorScroll.scrollTop - scrollRect.top,
       docTop,
       docBottom,
       docHeight: docBottom - docTop,
@@ -14138,9 +14165,8 @@ const BlockSelection = (() => {
 
   function _intersectsSelection($block, bounds) {
     const r = _getBlockSelectionRect($block);
-    const scrollRect = $editorScroll.getBoundingClientRect();
-    const blockDocTop = r.top - scrollRect.top + $editorScroll.scrollTop;
-    const blockDocBottom = r.bottom - scrollRect.top + $editorScroll.scrollTop;
+    const blockDocTop = r.top + bounds.scrollOffset;
+    const blockDocBottom = r.bottom + bounds.scrollOffset;
     const hasVerticalOverlap = !(blockDocBottom < bounds.docTop || blockDocTop > bounds.docBottom);
     if (!hasVerticalOverlap) return false;
     const hasHorizontalOverlap = !(r.right < bounds.left || r.left > bounds.right);
@@ -14156,25 +14182,38 @@ const BlockSelection = (() => {
     return false;
   }
 
-  function _syncSelectedBlocks(selectedBlocks) {
+  function _syncSelectedBlocks(selectedBlocks, elements) {
     const newSelected = new Set();
     selectedBlocks.forEach($block => newSelected.add($block.dataset.id));
-    _selectedIds.forEach(id => { if (!newSelected.has(id)) unselectBlock(id); });
-    newSelected.forEach(id => selectBlock(id));
+    _selectedIds.forEach(id => {
+      if (newSelected.has(id)) return;
+      _selectedIds.delete(id);
+      elements.get(id)?.classList.remove('selected');
+    });
+    selectedBlocks.forEach(el => {
+      const id = el.dataset.id;
+      if (_selectedIds.has(id)) return;
+      _selectedIds.add(id);
+      el.classList.add('selected');
+    });
   }
 
   function _updateMarquee(x, y) {
     const bounds = _getSelectionBounds(x, y);
+    // Read all geometry before changing highlights or the marquee. Geometry is
+    // refreshed each update so scrolling, wrapping and nested blocks stay exact.
+    if (Math.max(bounds.width, bounds.docHeight) >= BLOCK_SELECTION_MIN_DRAG_PX) {
+      const blocks = qsa('#blocks .block');
+      const elements = new Map(blocks.map(el => [el.dataset.id, el]));
+      const matchedBlocks = blocks.filter(el => _intersectsSelection(el, bounds));
+      const matchedSet = new Set(matchedBlocks);
+      const selectedBlocks = matchedBlocks.filter(el => !_hasSelectedAncestor(el, matchedSet));
+      _syncSelectedBlocks(selectedBlocks, elements);
+    }
     $marquee.style.left = bounds.left + 'px';
     $marquee.style.top = bounds.top + 'px';
     $marquee.style.width = bounds.width + 'px';
     $marquee.style.height = bounds.height + 'px';
-    if (Math.max(bounds.width, bounds.docHeight) < BLOCK_SELECTION_MIN_DRAG_PX) return;
-
-    const matchedBlocks = qsa('#blocks .block').filter($block => _intersectsSelection($block, bounds));
-    const matchedSet = new Set(matchedBlocks);
-    const selectedBlocks = matchedBlocks.filter($block => !_hasSelectedAncestor($block, matchedSet));
-    _syncSelectedBlocks(selectedBlocks);
   }
 
   function _getAutoScrollStep(y) {
@@ -14202,7 +14241,7 @@ const BlockSelection = (() => {
     if (!step) return;
     const before = $editorScroll.scrollTop;
     $editorScroll.scrollTop += step;
-    if ($editorScroll.scrollTop !== before) _updateMarquee(_dragCurrent.x, _dragCurrent.y);
+    if ($editorScroll.scrollTop !== before) _flushSelectionFrame();
     _autoScrollFrame = requestAnimationFrame(_runAutoScroll);
   }
 
@@ -14245,12 +14284,13 @@ const BlockSelection = (() => {
       y: e.clientY,
       docY: e.clientY - scrollRect.top + $editorScroll.scrollTop
     };
-    _updateMarquee(e.clientX, e.clientY);
+    _scheduleSelectionFrame();
     if (_getAutoScrollStep(e.clientY)) _scheduleAutoScroll();
     else _stopAutoScroll();
   });
   window.addEventListener('mouseup', () => {
     if (!_isDragging) return;
+    _flushSelectionFrame();
     _isDragging = false;
     _dragStart = null;
     _dragCurrent = null;
