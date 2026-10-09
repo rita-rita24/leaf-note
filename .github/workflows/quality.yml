@@ -17,7 +17,28 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.15'
       - run: npm ci
       - run: npm test
       - run: npm run test:modernization
       - run: node tests/check-drag-performance.mjs LeafNote.html
+      - run: node tests/selection-geometry-regressions.mjs LeafNote.html
+      - run: node tests/maskinger-incremental-regressions.mjs Maskinger.html
+  cross-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps firefox webkit
+      - run: node tests/selection-geometry-regressions.mjs LeafNote.html firefox
+      - run: node tests/selection-geometry-regressions.mjs LeafNote.html webkit
+      - run: node tests/maskinger-incremental-regressions.mjs Maskinger.html firefox
+      - run: node tests/maskinger-incremental-regressions.mjs Maskinger.html webkit
+      - run: node tests/run-cross-browser.mjs firefox
+      - run: node tests/run-cross-browser.mjs webkit

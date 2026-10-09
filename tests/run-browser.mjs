@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { rm, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import {
   launchBrowser,
@@ -33,10 +33,6 @@ const indexPath = path.join(repoRoot, "index.html");
 const indexUrl = `${pathToFileURL(indexPath).href}?test=1`;
 
 const validModes = new Set(["all", "unit", "integration", "coverage", "index"]);
-if (!validModes.has(mode)) {
-  console.error(`Unknown test mode: ${mode}`);
-  process.exit(1);
-}
 
 async function openPage(
   port,
@@ -7991,7 +7987,7 @@ const integrationTests = [
             fileDataUrl: "data:text/plain;base64,SGk=",
           });
           const imageCard = api.blk("image", "", {
-            url: "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=",
+            url: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
             caption: "Old caption",
           });
           current.blocks = [
@@ -8039,6 +8035,16 @@ const integrationTests = [
             imageCard,
           ];
           api.renderAll();
+          await Promise.all(
+            [...document.querySelectorAll(".image-wrap img")].map((image) =>
+              image.decode(),
+            ),
+          );
+          await Promise.all(
+            [...document.querySelectorAll(".image-wrap img")].map((image) =>
+              image.decode(),
+            ),
+          );
 
           document.querySelector(".toc-link").click();
           await delay();
@@ -8200,7 +8206,7 @@ const integrationTests = [
             .click();
           await delay();
           document.querySelector("#dialog-box .dialog-input").value =
-            "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
+            "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
           document.querySelector("#dialog-box [data-ok]").click();
           await delay();
 
@@ -8538,7 +8544,7 @@ const integrationTests = [
           };
           const imageEmptyClick = document.querySelectorAll(".image-empty")[0];
           const tinyGifBytes = Uint8Array.from(
-            atob("R0lGODlhAQABAAAAACwAAAAAAQABAAA="),
+            atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"),
             (ch) => ch.charCodeAt(0),
           );
           imageEmptyClick.click();
@@ -11306,7 +11312,7 @@ const integrationTests = [
           api.setState(s);
           api.renderAll();
           const acceptedUrl =
-            "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
+            "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
           const block =
             api.getState().pages[api.getState().currentPageId].blocks[0];
           api.internals.openImagePicker(block);
@@ -11415,7 +11421,7 @@ const integrationTests = [
           };
           try {
             const tinyGifBytes = Uint8Array.from(
-              atob("R0lGODlhAQABAAAAACwAAAAAAQABAAA="),
+              atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"),
               (ch) => ch.charCodeAt(0),
             );
             api.internals.openImagePicker(blocks[0]);
@@ -13014,6 +13020,7 @@ async function runStorageReliabilityTests(browser) {
 }
 
 async function main() {
+  if (!validModes.has(mode)) throw new Error(`Unknown test mode: ${mode}`);
   const collectCoverage = mode === "coverage";
   const browser = await launchBrowser();
   let page = null;
@@ -13022,11 +13029,18 @@ async function main() {
   try {
     page = await openPage(browser.port, { collectCoverage });
     const runLeafNoteUnit =
-      mode === "unit" || mode === "all" || mode === "coverage";
+      mode === "unit" ||
+      mode === "all" ||
+      mode === "leaf-note" ||
+      mode === "coverage";
     const runLeafNoteIntegration =
-      mode === "integration" || mode === "all" || mode === "coverage";
-    const runMaskingerUnit = runLeafNoteUnit;
-    const runMaskingerIntegration = runLeafNoteIntegration;
+      mode === "integration" ||
+      mode === "all" ||
+      mode === "leaf-note" ||
+      mode === "coverage";
+    const runMaskingerUnit = runLeafNoteUnit && mode !== "leaf-note";
+    const runMaskingerIntegration =
+      runLeafNoteIntegration && mode !== "leaf-note";
     const runIndexIntegration = runLeafNoteIntegration || mode === "index";
 
     if (runLeafNoteUnit) await runTestGroup(page, unitTests);
@@ -13058,20 +13072,28 @@ async function main() {
     maskingerPage?.close();
     page?.close();
     await stopBrowser(browser);
-    await rm(browser.userDataDir, {
-      recursive: true,
-      force: true,
-      maxRetries: 10,
-      retryDelay: 100,
-    });
   }
 }
 
-main()
-  .then(() => {
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error(err.stack || err.message || err);
-    process.exit(1);
-  });
+export {
+  unitTests,
+  integrationTests,
+  maskingerUnitTests,
+  maskingerIntegrationTests,
+  indexIntegrationTests,
+  runTestGroup,
+};
+
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error(err.stack || err.message || err);
+      process.exit(1);
+    });
+}

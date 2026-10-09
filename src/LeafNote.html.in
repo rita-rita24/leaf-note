@@ -14138,6 +14138,14 @@ const BlockSelection = (() => {
   let _dragCurrent = null;
   let _autoScrollFrame = null;
   let _selectionFrame = null;
+  let _geometry = null;
+  let _geometryDirty = true;
+  let _geometryMutations = null;
+  let _geometryResize = null;
+  const _invalidateGeometry = () => {
+    _geometryDirty = true;
+    if (_isDragging && _dragCurrent) _scheduleSelectionFrame();
+  };
   function _flushSelectionFrame() {
     if (_selectionFrame !== null) cancelAnimationFrame(_selectionFrame);
     _selectionFrame = null;
@@ -14148,6 +14156,78 @@ const BlockSelection = (() => {
   }
   const $marquee = document.getElementById('selection-marquee');
   const $editorScroll = document.getElementById('editor-scroll');
+
+  // Cache only within a live drag. Document-space coordinates survive editor
+  // scrolling. DOM/layout changes invalidate them; mouseup always reads fresh
+  // geometry so the final selection cannot depend on observer delivery timing.
+  function _consumeGeometryMutations(records) {
+    for (const record of records) {
+      if (record.target === $marquee) continue;
+      if (record.type === 'attributes' && record.attributeName === 'class' && record.target.matches?.('#blocks .block')) {
+        const withoutSelection = value => (value || '').split(/\s+/).filter(token => token && token !== 'selected').sort().join(' ');
+        if (withoutSelection(record.oldValue) === withoutSelection(record.target.getAttribute('class'))) continue;
+      }
+      _geometryDirty = true;
+      return;
+    }
+  }
+  function _startGeometryTracking() {
+    _stopGeometryTracking();
+    if (typeof ResizeObserver !== 'function' || typeof MutationObserver !== 'function') return;
+    _geometryMutations = new MutationObserver(records => {
+      _consumeGeometryMutations(records);
+      if (_geometryDirty && _isDragging) _scheduleSelectionFrame();
+    });
+    _geometryMutations.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true });
+    _geometryResize = new ResizeObserver(_invalidateGeometry);
+    _geometryResize.observe($editorScroll);
+    document.addEventListener('load', _invalidateGeometry, true);
+    document.addEventListener('scroll', _onGeometryScroll, true);
+    window.addEventListener('resize', _invalidateGeometry);
+    document.fonts?.addEventListener('loadingdone', _invalidateGeometry);
+  }
+  function _onGeometryScroll(event) {
+    if (event.target !== $editorScroll) _invalidateGeometry();
+  }
+  function _stopGeometryTracking() {
+    _geometryMutations?.disconnect();
+    _geometryResize?.disconnect();
+    _geometryMutations = null;
+    _geometryResize = null;
+    _geometry = null;
+    _geometryDirty = true;
+    document.removeEventListener('load', _invalidateGeometry, true);
+    document.removeEventListener('scroll', _onGeometryScroll, true);
+    window.removeEventListener('resize', _invalidateGeometry);
+    document.fonts?.removeEventListener('loadingdone', _invalidateGeometry);
+  }
+  function _getSelectionGeometry(bounds) {
+    if (_geometryMutations) _consumeGeometryMutations(_geometryMutations.takeRecords());
+    // Animated transforms can change positions without changing observed sizes.
+    // The application uses DOM style mutations; CSSOM-only animations also get
+    // fresh geometry while running, instead of relying on resize notifications.
+    const animations = typeof document.getAnimations === 'function' ? document.getAnimations() : null;
+    const canCache = _geometryResize && animations && !animations.some(animation => animation.playState === 'running');
+    if (!canCache || _geometryDirty || !_geometry || _geometry.width !== bounds.scrollWidth || _geometry.height !== bounds.scrollHeight) {
+      const blocks = qsa('#blocks .block');
+      const elements = new Map(blocks.map(el => [el.dataset.id, el]));
+      const rows = blocks.map(el => {
+        const r = _getBlockSelectionRect(el);
+        return { el, top: r.top + bounds.scrollOffset, bottom: r.bottom + bounds.scrollOffset, left: r.left + bounds.horizontalOffset, right: r.right + bounds.horizontalOffset };
+      });
+      if (_geometryResize && (!_geometry || blocks.length !== _geometry.rows.length || blocks.some((el, i) => el !== _geometry.rows[i].el))) {
+        _geometryResize.disconnect();
+        _geometryResize.observe($editorScroll);
+        // Observe the selection target, including toggle headers, so wrapping
+        // and asynchronously loaded content invalidate the document positions.
+        for (const el of blocks) _geometryResize.observe(el);
+        for (const el of qsa('#blocks .toggle-header')) _geometryResize.observe(el);
+      }
+      _geometry = { rows, elements, width: bounds.scrollWidth, height: bounds.scrollHeight };
+      _geometryDirty = false;
+    }
+    return _geometry;
+  }
 
   function clear() {
     _selectedIds.forEach(id => {
@@ -14219,6 +14299,9 @@ const BlockSelection = (() => {
       width: right - left,
       height: Math.max(0, bottom - top),
       scrollOffset: $editorScroll.scrollTop - scrollRect.top,
+      horizontalOffset: $editorScroll.scrollLeft - scrollRect.left,
+      scrollWidth: scrollRect.width,
+      scrollHeight: scrollRect.height,
       docTop,
       docBottom,
       docHeight: docBottom - docTop,
@@ -14226,14 +14309,11 @@ const BlockSelection = (() => {
     };
   }
 
-  function _intersectsSelection($block, bounds) {
-    const r = _getBlockSelectionRect($block);
-    const blockDocTop = r.top + bounds.scrollOffset;
-    const blockDocBottom = r.bottom + bounds.scrollOffset;
-    const hasVerticalOverlap = !(blockDocBottom < bounds.docTop || blockDocTop > bounds.docBottom);
-    if (!hasVerticalOverlap) return false;
-    const hasHorizontalOverlap = !(r.right < bounds.left || r.left > bounds.right);
-    return hasHorizontalOverlap || bounds.inBlockRail;
+  function _intersectsSelection(row, bounds) {
+    if (row.bottom < bounds.docTop || row.top > bounds.docBottom) return false;
+    const left = bounds.left + bounds.horizontalOffset;
+    const right = bounds.right + bounds.horizontalOffset;
+    return !(row.right < left || row.left > right) || bounds.inBlockRail;
   }
 
   function _hasSelectedAncestor($block, selectedBlocks) {
@@ -14263,12 +14343,9 @@ const BlockSelection = (() => {
 
   function _updateMarquee(x, y) {
     const bounds = _getSelectionBounds(x, y);
-    // Read all geometry before changing highlights or the marquee. Geometry is
-    // refreshed each update so scrolling, wrapping and nested blocks stay exact.
     if (Math.max(bounds.width, bounds.docHeight) >= BLOCK_SELECTION_MIN_DRAG_PX) {
-      const blocks = qsa('#blocks .block');
-      const elements = new Map(blocks.map(el => [el.dataset.id, el]));
-      const matchedBlocks = blocks.filter(el => _intersectsSelection(el, bounds));
+      const { rows, elements } = _getSelectionGeometry(bounds);
+      const matchedBlocks = rows.filter(row => _intersectsSelection(row, bounds)).map(row => row.el);
       const matchedSet = new Set(matchedBlocks);
       const selectedBlocks = matchedBlocks.filter(el => !_hasSelectedAncestor(el, matchedSet));
       _syncSelectedBlocks(selectedBlocks, elements);
@@ -14336,6 +14413,7 @@ const BlockSelection = (() => {
     $marquee.style.height = '0px';
     document.body.classList.add('block-selecting');
     clear();
+    _startGeometryTracking();
     e.preventDefault();
   });
 
@@ -14351,8 +14429,9 @@ const BlockSelection = (() => {
     if (_getAutoScrollStep(e.clientY)) _scheduleAutoScroll();
     else _stopAutoScroll();
   });
-  window.addEventListener('mouseup', () => {
+  function _endSelection() {
     if (!_isDragging) return;
+    _geometryDirty = true;
     _flushSelectionFrame();
     _isDragging = false;
     _dragStart = null;
@@ -14360,6 +14439,12 @@ const BlockSelection = (() => {
     _stopAutoScroll();
     $marquee.style.display = 'none';
     document.body.classList.remove('block-selecting');
+    _stopGeometryTracking();
+  }
+  window.addEventListener('mouseup', _endSelection);
+  window.addEventListener('blur', _endSelection);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) _endSelection();
   });
 
   // Click anywhere except the block-type conversion menu clears selection.

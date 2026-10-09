@@ -18,15 +18,20 @@
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\" package.json",
     "check:format": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\" package.json",
     "test:modernization": "node tests/modernization-regressions.mjs",
-    "check": "npm run check:source && npm run check:format && npm run check:distribution"
+    "check": "npm run check:source && npm run check:format && npm run check:distribution",
+    "test:leaf-note": "node tests/run-browser.mjs leaf-note",
+    "test:selection": "node tests/selection-geometry-regressions.mjs",
+    "test:cross-browser": "node tests/run-cross-browser.mjs"
   },
   "devDependencies": {
     "acorn": "8.19.0",
     "eslint": "10.12.0",
     "globals": "17.13.0",
     "parse5": "8.0.1",
+    "playwright": "1.64.0",
     "postcss": "8.5.29",
     "prettier": "3.9.9",
-    "terser": "5.51.2"
+    "terser": "5.51.2",
+    "yaml": "2.9.1"
   }
 }

@@ -123,3 +123,28 @@ Known compatibility exceptions: `document.execCommand` remains confined to nativ
 Official references checked 2026-10-10: [ECMAScript 2026](https://262.ecma-international.org/), [HTML Living Standard](https://html.spec.whatwg.org/), [DOM Standard](https://dom.spec.whatwg.org/), [UI Events](https://www.w3.org/TR/uievents/), [Clipboard](https://w3c.github.io/clipboard-apis/), [CSS Cascade](https://www.w3.org/TR/css-cascade-5/), [ESLint 10](https://eslint.org/blog/2026/02/eslint-v10.0.0-released/), [Node releases](https://nodejs.org/en/about/previous-releases), [Prettier options](https://prettier.io/docs/options.html).
 
 Performance endpoints must distinguish CPU helper time, correct DOM plus next animation-frame proxies, actual recorded paint events, and persisted data readback. Do not report a rendering proxy as actual pixels, INP or drag smoothness. Preserve source hashes, browser version, CPU/network emulation, data, trials, raw samples and unmeasured cases. Treat differences within trial variability as unconfirmed. Deployment requires the previous production baseline, a reproducible build and successful regression checks. Verify deployed file hashes before comparing production samples. Roll back by reverting the release commit and verifying the prior HTML hashes and critical editing/saving operations.
+
+## 2026-10-10: 選択座標と複数ブラウザの検証
+
+範囲選択中の座標は文書座標で保持し、DOM変更・サイズ変更・画像読み込み・フォント読み込み・エディター以外のスクロールで無効化する。選択クラスだけの変更は座標に影響しないため再取得しない。実行中のアニメーションや監視APIがない環境では毎回取得する。mouseupでは必ず最新の座標を使い、blur・非表示への移行でも監視と保留フレームを解放する。これは既存の対応ブラウザの最低条件を引き上げない。
+
+```sh
+npm ci
+npx playwright install firefox webkit
+npm run test:selection
+node tests/selection-geometry-regressions.mjs LeafNote.html firefox
+node tests/selection-geometry-regressions.mjs LeafNote.html webkit
+node tests/run-cross-browser.mjs firefox
+node tests/run-cross-browser.mjs webkit
+npm run test:leaf-note
+```
+
+`test:leaf-note`はLeafNote、配布ページ、保存と保存権の検証を明示的に対象とする。`npm test`は従来どおりMaskingerも対象とする。作業フォルダーでは以前からMaskingerが削除されており、`npm test`全体の成功を主張しない。本番リリースのCIは3画面すべてを検証する。
+
+PlaywrightのWebKitは実機Safariではない。Chrome専用のタッチエミュレーションを使う2テストは複数ブラウザランナーで未検証として出力し、Chromeの総合テストでは実行する。最低対応ブラウザ・WebViewは未指定なので別途確定が必要。アプリ自身の構文/APIの最低条件は変更しない。
+
+`measure-screen-actions.mjs`と`measure-selection.mjs`は一時プロファイルの合成データだけを使う。ハンドラーCPU、正しいDOMと次フレーム、強制保存と読み直しを区別する。DOMと次フレームの時間を画面の表示完了やINPと呼ばない。`trace-selection-frames.mjs`は入力・合成・presentationを含む生トレースを保存し、EventLatencyは対応する開始/終了IDを使って集計する。ヘッドレス合成のpresentationは実機ディスプレイの提示を証明しない。並行した測定は探索用として別ファイルに保存する。
+
+`inventory-ui.mjs`は編集元、独自のindex、Maskingerから静的な操作登録・動的UIの作成箇所・バックグラウンド処理を抽出する。登録数は利用者の操作数ではない。代表ケースの対応表と未計測の指標を併記する。生成されたアプリとindex内の同一JSONコピーは重複集計しない。
+
+Maskingerの対応表は専用の追加関数で管理し、正規化済み文字列フィールドをその場で変更しない。UTF-8容量は空配列2バイト＋各JSONレコード＋区切りカンマを加算し、巻き戻し時には全体から再計算する。表示と復元索引は対応表の変更で無効化する。clearでは旧索引を即時破棄する。`maskinger-incremental-regressions.mjs`でUnicode・制御文字・孤立サロゲート、同件数置換、保存容量の厳密な境界、超過時の巻き戻しと保存データ、破棄後の復元を検証する。

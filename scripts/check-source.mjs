@@ -1,5 +1,7 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { parseDocument } from "yaml";
 import { parse as parseJavaScript } from "acorn";
 import { parse as parseHTML } from "parse5";
 import postcss from "postcss";
@@ -156,6 +158,33 @@ for (const file of inventory) {
     });
   else if (file.endsWith(".json")) JSON.parse(source);
   else if (file.endsWith(".css")) postcss.parse(source, { from: relative });
+  else if (file.endsWith(".py")) {
+    const result = spawnSync(
+      process.env.PYTHON_BIN || "python3",
+      [
+        "-c",
+        "import ast,sys; ast.parse(sys.stdin.read(), filename=sys.argv[1])",
+        relative,
+      ],
+      { input: source, encoding: "utf8" },
+    );
+    entry.pythonSyntaxChecked = result.status === 0;
+    if (result.status !== 0)
+      report.findings.push({
+        file: relative,
+        rule: "Python syntax",
+        message: result.error?.message || result.stderr.trim(),
+      });
+  } else if (/\.ya?ml$/.test(file)) {
+    const document = parseDocument(source, { uniqueKeys: true, strict: true });
+    entry.yamlSyntaxChecked = document.errors.length === 0;
+    for (const error of document.errors)
+      report.findings.push({
+        file: relative,
+        rule: "YAML syntax",
+        message: error.message,
+      });
+  }
 }
 for (const unit of units) {
   unit.ast = parseJavaScript(unit.text, {

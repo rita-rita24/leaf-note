@@ -677,6 +677,10 @@
   let _lastAcceptedRestoreValue = '';
   let _mappingSaveDepth = 0;
   let _pendingMappingSave = false;
+  let _mappingStorageBytes = 2; // UTF-8 bytes for the canonical empty JSON array.
+  let _mappingVersion = 0;
+  let _renderedMappingVersion = -1;
+  let _restoreLookup = null;
   const _copyFeedbackTimers = new WeakMap();
 
   const SQL_KEYWORDS = new Set(`
@@ -824,11 +828,15 @@
   }
 
   function _serializedMappingsByteLength(items = _state._mappings) {
+    if (items === _state._mappings) return _mappingStorageBytes;
     return _utf8ByteLength(JSON.stringify(Array.isArray(items) ? items : []));
   }
 
   function _mappingStorageLimitViolation(items) {
-    const bytes = _serializedMappingsByteLength(items);
+    return _mappingStorageViolationForBytes(_serializedMappingsByteLength(items));
+  }
+
+  function _mappingStorageViolationForBytes(bytes) {
     if (bytes <= MASKINGER_STORAGE_MAX_BYTES) return null;
     return _limitViolation(
       'mapping_storage_bytes',
@@ -837,9 +845,25 @@
     );
   }
 
+  function _invalidateMappingViews() {
+    _mappingVersion += 1;
+    // Drop the previous lookup immediately, including when mappings are cleared.
+    _restoreLookup = null;
+  }
+
+  function _appendMapping(mapping) {
+    // Mapping string fields are canonical and never edited in place. Array serialization
+    // adds only a comma and this record; no need to reserialize the whole prefix.
+    _mappingStorageBytes += (_state._mappings.length ? 1 : 0) + _utf8ByteLength(JSON.stringify(mapping));
+    _state._mappings.push(mapping);
+    _invalidateMappingViews();
+  }
+
   function _resetMappingState() {
     _state._counterByType = new Map();
     _state._mappings = [];
+    _mappingStorageBytes = 2;
+    _invalidateMappingViews();
     _state._placeholderByKey = new Map();
   }
 
@@ -854,6 +878,8 @@
   function _restoreMappingState(snapshot) {
     _state._counterByType = new Map(snapshot._counterByType);
     _state._mappings = snapshot._mappings.map((item) => ({ ...item }));
+    _mappingStorageBytes = _utf8ByteLength(JSON.stringify(_state._mappings));
+    _invalidateMappingViews();
     _state._placeholderByKey = new Map(snapshot._placeholderByKey);
   }
 
@@ -895,14 +921,14 @@
     }
     const nextNumber = _nextPlaceholderNumber(normalizedType, stateRef);
     const nextPlaceholder = placeholder || _placeholderForNumber(normalizedType, nextNumber);
-    const storageViolation = _mappingStorageLimitViolation([
-      ...stateRef._mappings,
-      {
-        _placeholder: nextPlaceholder,
-        _type: normalizedType,
-        _original: normalizedOriginal
-      }
-    ]);
+    const recordBytes = _utf8ByteLength(JSON.stringify({
+      _placeholder: nextPlaceholder,
+      _type: normalizedType,
+      _original: normalizedOriginal
+    }));
+    const storageViolation = _mappingStorageViolationForBytes(
+      _serializedMappingsByteLength(stateRef._mappings) + recordBytes + (stateRef._mappings.length ? 1 : 0)
+    );
     if (storageViolation) {
       return { ok: false, violation: storageViolation };
     }
@@ -956,7 +982,7 @@
         _type: allowance.type,
         _original: allowance.original
       };
-      _state._mappings.push(mapping);
+      _appendMapping(mapping);
       loadedPlaceholders.add(mapping._placeholder);
       _state._placeholderByKey.set(_mappingKey(mapping._type, mapping._original), mapping._placeholder);
       const current = _state._counterByType.get(parsedPlaceholder.type) || 0;
@@ -1027,7 +1053,7 @@
 
     const placeholder = _nextPlaceholder(allowance.type, allowance.number);
     _state._placeholderByKey.set(_mappingKey(allowance.type, allowance.original), placeholder);
-    _state._mappings.push({
+    _appendMapping({
       _placeholder: placeholder,
       _type: allowance.type,
       _original: allowance.original
@@ -1774,7 +1800,8 @@
     if (inputViolation) {
       return { text: '', restored: 0, unresolved: 0, rejected: true, violation: inputViolation };
     }
-    const byPlaceholder = new Map(_state._mappings.map((item) => [item._placeholder, item._original]));
+    if (!_restoreLookup) _restoreLookup = new Map(_state._mappings.map((item) => [item._placeholder, item._original]));
+    const byPlaceholder = _restoreLookup;
     let restored = 0;
     let text = _normalizeNewlines(input);
     for (let pass = 0; pass < 8; pass += 1) {
@@ -1802,6 +1829,8 @@
   }
 
   function _renderMappings() {
+    if (_renderedMappingVersion === _mappingVersion) return;
+    _renderedMappingVersion = _mappingVersion;
     if ($mappingCount) $mappingCount.textContent = String(_state._mappings.length);
     if (!_state._mappings.length) {
       $mappingBody.innerHTML = '<tr><td class="empty-row" colspan="3">まだ対応表はありません。</td></tr>';
