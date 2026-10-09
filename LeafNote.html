@@ -3846,6 +3846,7 @@ const SANITIZE_ALLOWED_TAGS = new Set(['P','B','I','U','S','STRONG','EM','DEL','
 const SANITIZE_DROP_WITH_CONTENT = new Set(['SCRIPT','STYLE','IFRAME','FRAME','FRAMESET','OBJECT','EMBED','APPLET','LINK','META','BASE','TEMPLATE','NOSCRIPT','SVG','MATH']);
 const SANITIZE_ALLOWED_ATTRS = { A: ['href'], SPAN: ['data-ln-color'] };
 const SANITIZE_SAFE_HREF = /^(https?:|mailto:|#)/i;
+const NON_ASCII_TEXT_RE = /[^\x00-\x7f]/;
 const CONTROL_TEXT_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const RAW_TEXT_BLOCK_TYPES = new Set(['code', 'raw_markdown', 'html', 'math', 'mermaid']);
 const TRASH_AUTO_PURGE_ALLOWED_DAYS = new Set([0, 7, 30, 90]);
@@ -4072,8 +4073,9 @@ function _utf8CodePointBytes(codePoint) {
 function _truncateStringByUtf8Bytes(value, maxBytes = RICH_HTML_FIELD_MAX_BYTES) {
   const text = String(value || '');
   const limit = Number.isFinite(+maxBytes) && +maxBytes >= 0 ? Math.floor(+maxBytes) : RICH_HTML_FIELD_MAX_BYTES;
+  if (text.length === 0 || limit === 0) return { value: '', bytes: 0, truncated: text.length > 0 };
   // ASCII uses one byte per code unit; retain the code-point path for Unicode.
-  if (!/[^\x00-\x7f]/.test(text)) {
+  if (!NON_ASCII_TEXT_RE.test(text)) {
     const end = Math.min(text.length, limit);
     return { value: text.slice(0, end), bytes: end, truncated: end < text.length };
   }
@@ -4782,7 +4784,7 @@ function _statePayloadLimitViolation(raw, maxBytes = STATE_PAYLOAD_MAX_BYTES) {
   // UTF-8 needs at most three bytes per UTF-16 code unit (a surrogate pair
   // uses four bytes for two units). This is a proof of fit, not an estimate.
   if (raw.length <= Math.floor(limit / 3)) return false;
-  if (!/[^\x00-\x7f]/.test(raw)) return false;
+  if (!NON_ASCII_TEXT_RE.test(raw)) return false;
   let bytes = 0;
   for (let i = 0; i < raw.length;) {
     const codePoint = raw.codePointAt(i);
@@ -5392,16 +5394,10 @@ async function _doSave({ force = false, maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
     : persist();
 }
 async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, trackStorageBaseline = false } = {}) {
-  let startupLocalSnapshot;
-  let startupLocalSignature;
   const readLocal = () => {
     try {
       const raw = localStorage.getItem(STATE_STORAGE_KEY);
-      if (trackStorageBaseline) {
-        startupLocalSnapshot = raw;
-        _rememberStorageSnapshot('local', raw);
-        startupLocalSignature = _storageBaseline.local;
-      }
+      if (trackStorageBaseline) _rememberStorageSnapshot('local', raw);
       if (raw) return _parseStatePayloadWithLimit(raw, maxPayloadBytes);
     } catch (_) {}
     return null;
@@ -5412,14 +5408,7 @@ async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, track
     const req = tx.objectStore(DB_STORE).get('app-state');
     return new Promise((r) => {
       req.onsuccess = () => {
-        if (trackStorageBaseline) {
-          const snapshot = req.result == null ? null : JSON.stringify(req.result);
-          // Both signatures are identical only when the full snapshots match.
-          // Keep this reuse local to this read, never across reads or tabs.
-          if (startupLocalSnapshot !== undefined && snapshot === startupLocalSnapshot)
-            _storageBaseline.idb = startupLocalSignature;
-          else _rememberStorageSnapshot('idb', snapshot);
-        }
+        if (trackStorageBaseline) _rememberStorageSnapshot('idb', req.result == null ? null : JSON.stringify(req.result));
         if (req.result) r(req.result);
         else r(null);
         db.close?.();
@@ -11773,7 +11762,7 @@ function _insertSanitizedClipboardPayload({ html = '', text = '' } = {}, target 
 
 function _utf8ByteLength(value) {
   const text = String(value || '');
-  if (!/[^\x00-\x7f]/.test(text)) return text.length;
+  if (!NON_ASCII_TEXT_RE.test(text)) return text.length;
   try { return new Blob([text]).size; }
   catch (_) {
     try { return new TextEncoder().encode(text).length; }
