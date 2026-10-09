@@ -5580,8 +5580,14 @@ const integrationTests = [
           const delay = () => new Promise((resolve) => setTimeout(resolve, 80));
           api.setState(api.createInitialState());
           api.renderAll();
+          // The preceding mobile test changes the viewport. Let WebKit commit
+          // desktop visibility/inert state before capturing the opener focus.
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
           const settings = document.querySelector("#settings-btn");
           settings.focus();
+          const openerFocused = document.activeElement === settings;
           settings.click();
           await delay();
           const theme = document.querySelector("#theme-customizer-overlay");
@@ -5639,6 +5645,7 @@ const integrationTests = [
           api.internals.setUiLanguage("en");
           return {
             preserved,
+            openerFocused,
             languageFocus,
             backgroundRejectsFocus,
             tabRecovered,
@@ -5650,7 +5657,8 @@ const integrationTests = [
       );
       assert.deepEqual(result.preserved, [true, true, true]);
       for (const [key, value] of Object.entries(result))
-        if (key !== "preserved") assert.equal(value, true, key);
+        if (key !== "preserved")
+          assert.equal(value, true, `${key}: ${JSON.stringify(result)}`);
     },
   },
   {
