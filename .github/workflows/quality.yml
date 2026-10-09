@@ -22,6 +22,7 @@ jobs:
       - run: node tests/storage-mirror-regressions.mjs LeafNote.html
       - run: node tests/history-focused-regressions.mjs LeafNote.html
       - run: node tests/history-reuse-regressions.mjs LeafNote.html
+      - run: node tests/browser-ime-regressions.mjs LeafNote.html
       - run: npm run test:modernization
       - run: node tests/check-drag-performance.mjs LeafNote.html
       - run: node tests/selection-geometry-regressions.mjs LeafNote.html

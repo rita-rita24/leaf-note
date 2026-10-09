@@ -138,6 +138,59 @@ try {
     const largeFresh =
       document.querySelector("#blocks > .block") !== bigElement &&
       getCurrentPage().blocks[0].content.length === 40000;
+    const typed = createInitialState();
+    typed.pages[typed.currentPageId].blocks = [
+      blk("text", "Typed metadata"),
+      blk("text", "Other"),
+    ];
+    api.setState(typed);
+    getCurrentPage().blocks[0].metadata = new Date("2026-10-10T00:00:00Z");
+    getCurrentPage().blocks[0].transient = undefined;
+    renderAll();
+    await frame();
+    await frame();
+    const typedElement = document.querySelector("#blocks > .block");
+    _pushUndoStackSnapshot(JSON.stringify(state));
+    getCurrentPage().blocks[1].content = "Changed other";
+    undo();
+    const jsonTypesRestored =
+      getCurrentPage().blocks[0].metadata === "2026-10-10T00:00:00.000Z" &&
+      !Object.prototype.hasOwnProperty.call(
+        getCurrentPage().blocks[0],
+        "transient",
+      ) &&
+      document.querySelector("#blocks > .block") !== typedElement;
+    const shared = { value: 1 };
+    let getterRead = false;
+    const accessor = {
+      get value() {
+        getterRead = true;
+        return 1;
+      },
+    };
+    const plainJSONGuards =
+      _historyIsPlainJSONData({ values: [null, true, 0, "text"] }) &&
+      !_historyIsPlainJSONData({ value: -0 }) &&
+      !_historyIsPlainJSONData({ value: undefined }) &&
+      !_historyIsPlainJSONData({ value: NaN }) &&
+      !_historyIsPlainJSONData({ values: Object.freeze([1]) }) &&
+      !_historyIsPlainJSONData({ first: shared, second: shared }) &&
+      !_historyIsPlainJSONData(accessor) &&
+      !getterRead;
+    let ownershipFallback = true;
+    const ownershipHelper = api.hasOwnKey;
+    if (typeof ownershipHelper === "function") {
+      const native = Object.hasOwn;
+      try {
+        Object.hasOwn = undefined;
+        ownershipFallback =
+          ownershipHelper({ own: 0 }, "own") &&
+          !ownershipHelper(Object.create({ inherited: true }), "inherited") &&
+          ownershipHelper({ hasOwnProperty: false, own: "" }, "own");
+      } finally {
+        Object.hasOwn = native;
+      }
+    }
     const todoDraft = createInitialState();
     todoDraft.pages[todoDraft.currentPageId].blocks = [
       blk("todo", "Accessible task"),
@@ -204,6 +257,9 @@ try {
       todoRestored,
       scrollPreserved,
       caretPreserved,
+      jsonTypesRestored,
+      plainJSONGuards,
+      ownershipFallback,
     };
   });
   console.log(JSON.stringify(result));

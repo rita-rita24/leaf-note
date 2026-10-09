@@ -8844,13 +8844,39 @@ function _historyBlockMarkup(element) {
 function renderBlock(block, parentList, depth = 0) {
   const element = _renderBlockContent(block, parentList, depth);
   if (depth === 0 && _historyReusableTypes.has(block.type) && !block.children?.length) {
-    const snapshot = JSON.stringify(block), markup = _historyBlockMarkup(element);
-    // Large fields render normally rather than retaining another large copy.
-    if (snapshot.length + markup.length <= 65536) {
-      _historyRenderedBlocks.set(element, { block, parentList, snapshot, markup });
-    }
+    try {
+      const snapshot = JSON.stringify(block), markup = _historyBlockMarkup(element);
+      // Large fields render normally rather than retaining another large copy.
+      if (snapshot.length + markup.length <= 65536) {
+        _historyRenderedBlocks.set(element, { block, parentList, snapshot, markup });
+      }
+    } catch { /* Rendering does not require a serializable cache record. */ }
   }
   return element;
+}
+
+function _historyIsPlainJSONData(value) {
+  const stack = [value], seen = new Set();
+  while (stack.length) {
+    const item = stack.pop();
+    if (item === null || typeof item === 'string' || typeof item === 'boolean') continue;
+    if (typeof item === 'number') { if (!Number.isFinite(item) || Object.is(item, -0)) return false; continue; }
+    if (typeof item !== 'object' || seen.has(item)) return false;
+    seen.add(item);
+    const array = Array.isArray(item);
+    if (!Object.isExtensible(item) || Object.getPrototypeOf(item) !== (array ? Array.prototype : Object.prototype)
+        || Object.getOwnPropertySymbols(item).length) return false;
+    const descriptors = Object.getOwnPropertyDescriptors(item);
+    if (array && !descriptors.length.writable) return false;
+    const keys = Object.keys(descriptors).filter(key => !(array && key === 'length'));
+    if (array && (keys.length !== item.length || keys.some(key => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= item.length))) return false;
+    for (const key of keys) {
+      const descriptor = descriptors[key];
+      if (!descriptor.enumerable || !descriptor.writable || !descriptor.configurable || !_hasOwnKey(descriptor, 'value')) return false;
+      stack.push(descriptor.value);
+    }
+  }
+  return true;
 }
 
 function _prepareHistoryBlockReuse(restoredState) {
@@ -8861,12 +8887,18 @@ function _prepareHistoryBlockReuse(restoredState) {
       || _editorRenderedPageId !== state.currentPageId
       || _editorRenderedBlockList !== oldPage.blocks
       || normalizeUiLanguage(state.uiLanguage) !== normalizeUiLanguage(restoredState.uiLanguage)) return null;
+  const listDescriptors = Object.getOwnPropertyDescriptors(oldPage.blocks);
+  if (!Object.isExtensible(oldPage.blocks) || Object.getOwnPropertySymbols(oldPage.blocks).length
+      || Object.keys(listDescriptors).length !== oldPage.blocks.length + 1
+      || !listDescriptors.length?.writable
+      || Object.entries(listDescriptors).some(([key, descriptor]) => key !== 'length' && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= oldPage.blocks.length || !descriptor.writable || !descriptor.configurable))) return null;
   const elements = new Map(Array.from($('#blocks').children, element => [element.dataset.id, element]));
   const reused = new Map();
   const nextBlocks = nextPage.blocks.map(block => {
     const element = elements.get(block.id);
     const rendered = element && _historyRenderedBlocks.get(element);
     if (!rendered || rendered.parentList !== oldPage.blocks
+        || !_historyIsPlainJSONData(rendered.block)
         || JSON.stringify(block) !== rendered.snapshot
         || JSON.stringify(rendered.block) !== rendered.snapshot
         || _historyBlockMarkup(element) !== rendered.markup) return block;
@@ -13297,7 +13329,9 @@ function normalizeThemeHexColor(value) {
 }
 
 function _hasOwnKey(object, key) {
-  return Object.prototype.hasOwnProperty.call(object, key);
+  return typeof Object.hasOwn === 'function'
+    ? Object.hasOwn(object, key)
+    : Object.prototype.hasOwnProperty.call(object, key);
 }
 
 function normalizeThemeCustom(value) {
@@ -14820,6 +14854,7 @@ function exposeLeafNoteTestApi() {
     Object.values(draftState.pages || {}).forEach((page) => visit(page.blocks));
   };
   window.__LeafNoteTest = {
+    hasOwnKey: _hasOwnKey,
     getState: () => state,
     setState(rawState) {
       if (rawState === testDraftState) {

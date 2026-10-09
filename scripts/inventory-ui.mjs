@@ -235,6 +235,26 @@ for (const file of files) {
             "Not independently timed; match to representative cases in coverage matrix.",
         });
       if (
+        node.type === "CallExpression" &&
+        node.callee.type === "Identifier" &&
+        node.callee.name === "createButton"
+      )
+        controls.push({
+          file,
+          origin: `createButton:${line(node)}`,
+          line: line(node),
+          ownerFunction: ownerFunction || "<top-level>",
+          tag: "button",
+          factory: "createButton",
+          arguments: node.arguments.map(text),
+          target:
+            parent?.type === "VariableDeclarator" ? text(parent.id) : null,
+          label:
+            "Assigned at factory/call site; see source and event registration",
+          measurementStatus:
+            "Not independently timed; match to representative cases in coverage matrix.",
+        });
+      if (
         node.type === "TemplateLiteral" &&
         node.quasis.some((part) =>
           /<(?:button|input|select|textarea|summary|a)\b|contenteditable|role=["']button/.test(
