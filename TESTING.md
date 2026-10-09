@@ -19,16 +19,17 @@ CHROME_BIN="/absolute/path/to/chrome" npm test
 
 ### 配布ファイルの同期
 
-アプリ本体の編集元は `LeafNote.html`。`index.html` は配布用に同じソースを `script#leafnote-source` の JSON 文字列として保持している。本体を変更したら、次の順に同期して確認する。
+アプリ本体の編集元は `src/LeafNote.html.in`、配信用の生成物は `LeafNote.html`。`index.html` は配布用に同じソースを `script#leafnote-source` の JSON 文字列として保持している。本体を変更したら、次の順に同期して確認する。
 
 ```sh
+npm ci
 npm run build
 npm run check:distribution
 npm test
 ```
 
-- `npm run build`: `LeafNote.html` を JSON 化し、`<` を `\u003c` に置き換えて `index.html` の既存の JSON ペイロードだけを更新する。ランディングページやそのスクリプトは変更しない。両ファイルの差分をレビューし、両方を配布する。
-- `npm run check:distribution`: ファイルを変更せず、本体との不一致、埋め込み要素の欠落・重複、JSON 型や構文の不正、未エスケープの `<` を検出したら終了コード 1 を返す。配布用要素の構造や JSON が壊れている場合は `build` も停止するため、先にその破損を修正する。
+- `npm run build`: 編集元のJavaScriptを圧縮して `LeafNote.html` を生成し、そのHTMLを JSON 化して、`<` を `\u003c` に置き換えて `index.html` の既存の JSON ペイロードだけを更新する。ランディングページやそのスクリプトは変更しない。両ファイルの差分をレビューし、両方を配布する。
+- `npm run check:distribution`: ファイルを変更せず、圧縮HTMLの生成元との不一致、および本体との不一致、埋め込み要素の欠落・重複、JSON 型や構文の不正、未エスケープの `<` を検出したら終了コード 1 を返す。配布用要素の構造や JSON が壊れている場合は `build` も停止するため、先にその破損を修正する。
 - `npm test` の前には `pretest` が配布チェックを実行する。未同期の配布物を自動修正して隠さず、テスト開始前に失敗させる。個別の `test:unit` / `test:integration` / `test:coverage` では `pretest` は実行されないため、先に `npm run check:distribution` を実行する。
 
 ### ブラウザテスト
@@ -103,3 +104,7 @@ integration test では次の範囲を優先する。
 - IndexedDB / localStorage の結果が不安定な場合は、テストごとに origin と保存領域を初期化しているか確認する。
 - coverage が 0% になる場合は、coverage 開始前に対象ページを読み込んでいないか、または対象 URL のフィルタが `LeafNote.html` / `index.html` と一致しているか確認する。
 - integration test がタイムアウトする場合は、画面操作後に DOM 更新、保存完了、非同期処理完了を待つ条件が具体的か確認する。
+
+## 配信用HTMLの生成
+
+`npm ci` 後、編集するアプリ本体は `src/LeafNote.html.in` です。`npm run build` でJavaScriptを圧縮した `LeafNote.html` と、それを内包する `index.html` を生成します。圧縮器は開発時だけ使い、実行時の追加通信・依存はありません。`npm run check:distribution` は両方の生成物を確認します。生成された `LeafNote.html` の直接編集は次のビルドで上書きされます。

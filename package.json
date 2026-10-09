@@ -7,12 +7,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "node scripts/sync-distribution.mjs",
-    "check:distribution": "node scripts/sync-distribution.mjs --check",
+    "build": "node scripts/build-app.mjs && node scripts/sync-distribution.mjs",
+    "check:distribution": "node scripts/build-app.mjs --check && node scripts/sync-distribution.mjs --check",
     "pretest": "npm run check:distribution",
     "test": "node tests/run-browser.mjs all",
     "test:unit": "node tests/run-browser.mjs unit",
     "test:integration": "node tests/run-browser.mjs integration",
     "test:coverage": "node tests/run-browser.mjs coverage"
+  },
+  "devDependencies": {
+    "terser": "5.51.2"
   }
 }
