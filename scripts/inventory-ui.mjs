@@ -19,14 +19,23 @@ const registrations = [],
   controls = [],
   templates = [],
   functions = [];
-function walkJS(node, visit, parent = null) {
+function walkJS(node, visit, parent = null, ownerFunction = null) {
   if (!node || typeof node !== "object") return;
-  if (node.type) visit(node, parent);
+  const owner =
+    node.type === "ClassDeclaration"
+      ? node.id?.name
+      : node.type === "MethodDefinition"
+        ? `${ownerFunction}.${node.key.name || node.key.value}`
+        : node.type === "FunctionDeclaration"
+          ? node.id?.name
+          : ownerFunction;
+  if (node.type) visit(node, parent, owner);
   for (const [key, value] of Object.entries(node)) {
     if (key === "loc") continue;
     if (Array.isArray(value))
-      for (const child of value) walkJS(child, visit, node);
-    else if (value && typeof value === "object") walkJS(value, visit, node);
+      for (const child of value) walkJS(child, visit, node, owner);
+    else if (value && typeof value === "object")
+      walkJS(value, visit, node, owner);
   }
 }
 for (const file of files) {
@@ -110,7 +119,22 @@ for (const file of files) {
     const text = (node) =>
       script.text.slice(node.start, node.end).slice(0, 240);
     const line = (node) => script.line + node.loc.start.line - 1;
-    walkJS(ast, (node, parent) => {
+    const calls = (handler) => {
+      const names = new Set();
+      walkJS(handler, (node) => {
+        if (node.type === "CallExpression") names.add(text(node.callee));
+      });
+      return Array.from(names);
+    };
+    walkJS(ast, (node, parent, ownerFunction) => {
+      if (node.type === "MethodDefinition")
+        functions.push({
+          file,
+          line: line(node),
+          name: ownerFunction,
+          kind: "class method",
+          lines: node.loc.end.line - node.loc.start.line + 1,
+        });
       if (node.type === "FunctionDeclaration")
         functions.push({
           file,
@@ -126,11 +150,17 @@ for (const file of files) {
         registrations.push({
           file,
           line: line(node),
+          ownerFunction: ownerFunction || "<top-level>",
           origin: "script",
           kind: "addEventListener",
           target: text(node.callee.object),
           event: node.arguments[0]?.value || text(node.arguments[0]),
+          calledFunctions: calls(node.arguments[1]),
           handler: text(node.arguments[1]),
+          handlerSource: script.text.slice(
+            node.arguments[1].start,
+            node.arguments[1].end,
+          ),
           measurementStatus:
             "Unmeasured unless mapped to a representative case",
         });
@@ -142,11 +172,14 @@ for (const file of files) {
         registrations.push({
           file,
           line: line(node),
+          ownerFunction: ownerFunction || "<top-level>",
           origin: "script",
           kind: "event property",
           target: text(node.left.object),
           event: node.left.property.name.slice(2),
+          calledFunctions: calls(node.right),
           handler: text(node.right),
+          handlerSource: script.text.slice(node.right.start, node.right.end),
           measurementStatus:
             "Unmeasured unless mapped to a representative case",
         });
@@ -163,6 +196,7 @@ for (const file of files) {
         background.push({
           file,
           line: line(node),
+          ownerFunction: ownerFunction || "<top-level>",
           api: node.callee.name,
           callback: text(node.arguments[0]),
           delay: node.arguments[1] ? text(node.arguments[1]) : null,
@@ -192,6 +226,7 @@ for (const file of files) {
           file,
           origin: `createElement:${line(node)}`,
           line: line(node),
+          ownerFunction: ownerFunction || "<top-level>",
           tag: node.arguments[0].value,
           target:
             parent?.type === "VariableDeclarator" ? text(parent.id) : null,

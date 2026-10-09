@@ -5281,7 +5281,9 @@ function _applyHistorySnapshot(snapshot) {
   const focusSnapshot = _captureHistoryFocus();
   const previousLanguage = normalizeUiLanguage(state.uiLanguage);
   const revision = Math.max(Date.now(), getStateRevision(state) + 1);
-  state = JSON.parse(snapshot);
+  const restoredState = JSON.parse(snapshot);
+  const reuseBlocks = _prepareHistoryBlockReuse(restoredState);
+  state = restoredState;
   state.lastModifiedAt = Math.max(revision, getStateRevision(state) + 1);
   _clearStartupLossyRepairSnapshot();
   _hasPersistedStateJSON = false;
@@ -5292,7 +5294,7 @@ function _applyHistorySnapshot(snapshot) {
   if (state.uiLanguage !== previousLanguage) applyLanguage();
   applyTheme();
   applyThemeCustom();
-  renderAll({ forceEditableSync: true });
+  renderAll({ forceEditableSync: true, reuseBlocks });
   _restoreHistoryFocus(focusSnapshot);
   _doSave();
 }
@@ -8799,7 +8801,7 @@ function scheduleBlockGutterPositions(blocks = null) {
 window.addEventListener('resize', scheduleBlockGutterPositions);
 
 /* ==================== Render Editor ==================== */
-function renderEditor({ forceEditableSync = false } = {}) {
+function renderEditor({ forceEditableSync = false, reuseBlocks = null } = {}) {
   let page = getCurrentPage();
   if (page && page.deletedAt) {
     const next = firstLivePageId();
@@ -8818,14 +8820,80 @@ function renderEditor({ forceEditableSync = false } = {}) {
 
   const ti = $('#page-title');
   if (forceEditableSync || document.activeElement !== ti) ti.textContent = page.title || '';
-  const bl = $('#blocks'); bl.innerHTML = '';
-  page.blocks.forEach(b => bl.appendChild(renderBlock(b, page.blocks)));
+  const bl = $('#blocks');
+  if (reuseBlocks) _renderHistoryBlockList(bl, page.blocks, reuseBlocks);
+  else { bl.textContent = ''; page.blocks.forEach(b => bl.appendChild(renderBlock(b, page.blocks))); }
   updateNumberedList(bl);
+  _editorRenderedBlockList = page.blocks;
+  _editorRenderedPageId = state.currentPageId;
   scheduleBlockGutterPositions();
 }
 
 /* ==================== Render Block (dispatch) ==================== */
+const _historyReusableTypes = new Set(['text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'quote', 'bullet', 'numbered', 'divider']);
+const _historyRenderedBlocks = new WeakMap();
+let _editorRenderedBlockList = null;
+let _editorRenderedPageId = null;
+
+function _historyBlockMarkup(element) {
+  // Gutter alignment is derived from layout and does not alter the model.
+  // Every other markup change prevents reuse, including selection and edits.
+  return element.outerHTML.replace(/(<div class="block-gutter") style="top: [^"]*"/, '$1');
+}
+
 function renderBlock(block, parentList, depth = 0) {
+  const element = _renderBlockContent(block, parentList, depth);
+  if (depth === 0 && _historyReusableTypes.has(block.type) && !block.children?.length) {
+    const snapshot = JSON.stringify(block), markup = _historyBlockMarkup(element);
+    // Large fields render normally rather than retaining another large copy.
+    if (snapshot.length + markup.length <= 65536) {
+      _historyRenderedBlocks.set(element, { block, parentList, snapshot, markup });
+    }
+  }
+  return element;
+}
+
+function _prepareHistoryBlockReuse(restoredState) {
+  const oldPage = getCurrentPage();
+  const nextPage = restoredState.pages?.[restoredState.currentPageId];
+  if (!oldPage || !nextPage || oldPage.deletedAt || nextPage.deletedAt
+      || state.currentPageId !== restoredState.currentPageId
+      || _editorRenderedPageId !== state.currentPageId
+      || _editorRenderedBlockList !== oldPage.blocks
+      || normalizeUiLanguage(state.uiLanguage) !== normalizeUiLanguage(restoredState.uiLanguage)) return null;
+  const elements = new Map(Array.from($('#blocks').children, element => [element.dataset.id, element]));
+  const reused = new Map();
+  const nextBlocks = nextPage.blocks.map(block => {
+    const element = elements.get(block.id);
+    const rendered = element && _historyRenderedBlocks.get(element);
+    if (!rendered || rendered.parentList !== oldPage.blocks
+        || JSON.stringify(block) !== rendered.snapshot
+        || JSON.stringify(rendered.block) !== rendered.snapshot
+        || _historyBlockMarkup(element) !== rendered.markup) return block;
+    reused.set(block.id, element);
+    return rendered.block;
+  });
+  if (!reused.size) return null;
+  // Existing handlers close over both the block and its parent list. Keep
+  // these identities together; a reused DOM node must never edit a stale model.
+  for (let i = 0; i < nextBlocks.length; i++) oldPage.blocks[i] = nextBlocks[i];
+  oldPage.blocks.length = nextBlocks.length;
+  nextPage.blocks = oldPage.blocks;
+  return reused;
+}
+
+function _renderHistoryBlockList(container, blocks, reuseBlocks) {
+  const nodes = blocks.map(block => reuseBlocks?.get(block.id) || renderBlock(block, blocks));
+  const retained = new Set(nodes);
+  for (const child of Array.from(container.children)) if (!retained.has(child)) child.remove();
+  let cursor = container.firstElementChild;
+  for (const node of nodes) {
+    if (node === cursor) cursor = cursor.nextElementSibling;
+    else container.insertBefore(node, cursor);
+  }
+}
+
+function _renderBlockContent(block, parentList, depth = 0) {
   const el = document.createElement('div');
   el.className = 'block';
   el.dataset.type = block.type;
@@ -11108,6 +11176,7 @@ function renderInlineBlock(block, el, parentList, depth = 0) {
   const prefix = document.createElement('div'); prefix.className = 'block-prefix';
   if (block.type === 'todo') {
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'todo-checkbox'; cb.checked = !!block.checked;
+    cb.setAttribute('aria-label', t('common.done'));
     cb.onchange = () => { block.checked = cb.checked; el.classList.toggle('checked', cb.checked); saveState(); };
     prefix.appendChild(cb);
   } else if (block.type === 'callout') {
@@ -14701,10 +14770,10 @@ function syncDocumentNameControl({ forceEditableSync = false } = {}) {
 }
 
 /* ==================== Render All ==================== */
-function renderAll({ forceEditableSync = false } = {}) {
+function renderAll({ forceEditableSync = false, reuseBlocks = null } = {}) {
   syncDocumentNameControl({ forceEditableSync });
   renderSidebar();
-  renderEditor({ forceEditableSync });
+  renderEditor({ forceEditableSync, reuseBlocks });
 }
 
 const LEAFNOTE_TEST_MODE = (() => {
