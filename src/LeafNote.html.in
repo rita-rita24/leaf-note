@@ -3727,7 +3727,7 @@ function normalizeUiLanguage(value) {
 
 function _i18nLookup(locale, key) {
   return String(key || '').split('.').reduce((obj, part) => (
-    obj && Object.prototype.hasOwnProperty.call(obj, part) ? obj[part] : undefined
+    obj && _hasOwnKey(obj, part) ? obj[part] : undefined
   ), I18N[locale]);
 }
 
@@ -3735,7 +3735,7 @@ function t(key, params = {}) {
   const locale = normalizeUiLanguage(state && state.uiLanguage);
   const value = _i18nLookup(locale, key) ?? _i18nLookup(DEFAULT_UI_LANGUAGE, key) ?? key;
   return String(value).replace(/\{(\w+)\}/g, (_, name) => (
-    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : ''
+    _hasOwnKey(params, name) ? String(params[name]) : ''
   ));
 }
 
@@ -4497,7 +4497,7 @@ function _clearFileFields(block) {
 function _clearGovernanceFields(block) {
   let changed = false;
   GOVERNANCE_FIELD_KEYS.forEach((key) => {
-    if (!Object.prototype.hasOwnProperty.call(block, key)) return;
+    if (!_hasOwnKey(block, key)) return;
     if (block[key] !== '') changed = true;
     block[key] = '';
   });
@@ -4507,11 +4507,11 @@ function _clearGovernanceFields(block) {
 function _clearSpecFields(block) {
   let changed = false;
   SPEC_PLAIN_TEXT_FIELDS.forEach((key) => {
-    if (!Object.prototype.hasOwnProperty.call(block, key)) return;
+    if (!_hasOwnKey(block, key)) return;
     if (block[key] !== '') changed = true;
     block[key] = '';
   });
-  if (Object.prototype.hasOwnProperty.call(block, 'columns') && block.columns !== null) {
+  if (_hasOwnKey(block, 'columns') && block.columns !== null) {
     block.columns = null;
     changed = true;
   }
@@ -4529,7 +4529,7 @@ const CLEAR_TABLE_DEFAULTS = [null, null, null, true, false, null];
 function _clearBlockFieldsIfNeeded(block, keys, defaults, clear) {
   let normalized = true;
   for (let i = 0; i < keys.length; i++) {
-    if (!Object.is(block[keys[i]], defaults[i]) || !Object.prototype.hasOwnProperty.call(block, keys[i])) {
+    if (!Object.is(block[keys[i]], defaults[i]) || !_hasOwnKey(block, keys[i])) {
       normalized = false;
       break;
     }
@@ -5010,7 +5010,7 @@ function _statesReferToSameDocument(first, second) {
   if (first.documentId && second.documentId) return first.documentId === second.documentId;
   // Older exports predate document IDs. Shared page IDs establish their lineage;
   // document names are editable and therefore cannot identify a document.
-  return Object.keys(first.pages).some((id) => Object.prototype.hasOwnProperty.call(second.pages, id));
+  return Object.keys(first.pages).some((id) => _hasOwnKey(second.pages, id));
 }
 
 function setSaveStatus(kind, message, { persistent = false } = {}) {
@@ -8843,7 +8843,7 @@ function _historyBlockMarkup(element) {
 
 function renderBlock(block, parentList, depth = 0) {
   const element = _renderBlockContent(block, parentList, depth);
-  if (depth === 0 && _historyReusableTypes.has(block.type) && !block.children?.length) {
+  if (depth === 0 && _historyReusableTypes.has(block.type) && !block.children?.length && _historyIsPlainJSONData(block)) {
     try {
       const snapshot = JSON.stringify(block), markup = _historyBlockMarkup(element);
       // Large fields render normally rather than retaining another large copy.

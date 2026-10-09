@@ -191,6 +191,22 @@ try {
         Object.hasOwn = native;
       }
     }
+    const getterDraft = createInitialState();
+    getterDraft.pages[getterDraft.currentPageId].blocks = [
+      blk("text", "Getter fixture"),
+    ];
+    api.setState(getterDraft);
+    let renderGetterReads = 0;
+    Object.defineProperty(getCurrentPage().blocks[0], "metadata", {
+      enumerable: true,
+      configurable: true,
+      get() {
+        renderGetterReads++;
+        return "value";
+      },
+    });
+    renderEditor();
+    const cacheGetterSafe = renderGetterReads === 0;
     const todoDraft = createInitialState();
     todoDraft.pages[todoDraft.currentPageId].blocks = [
       blk("todo", "Accessible task"),
@@ -259,6 +275,7 @@ try {
       caretPreserved,
       jsonTypesRestored,
       plainJSONGuards,
+      cacheGetterSafe,
       ownershipFallback,
     };
   });
