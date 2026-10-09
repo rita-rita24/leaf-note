@@ -191,6 +191,27 @@ try {
         Object.hasOwn = native;
       }
     }
+    const aliasDraft = createInitialState();
+    aliasDraft.pages[aliasDraft.currentPageId].blocks = [
+      blk("text", "Alias first"),
+      blk("text", "Alias second"),
+      blk("text", "Other"),
+    ];
+    api.setState(aliasDraft);
+    const crossBlockMetadata = { value: "Original" };
+    getCurrentPage().blocks[0].metadata = crossBlockMetadata;
+    getCurrentPage().blocks[1].metadata = crossBlockMetadata;
+    renderAll();
+    _pushUndoStackSnapshot(JSON.stringify(state));
+    getCurrentPage().blocks[2].content = "Changed";
+    undo();
+    const independentMetadata =
+      getCurrentPage().blocks[0].metadata !==
+      getCurrentPage().blocks[1].metadata;
+    getCurrentPage().blocks[0].metadata.value = "Changed first";
+    const crossBlockJSONAliasing =
+      independentMetadata &&
+      getCurrentPage().blocks[1].metadata.value === "Original";
     const getterDraft = createInitialState();
     getterDraft.pages[getterDraft.currentPageId].blocks = [
       blk("text", "Getter fixture"),
@@ -276,6 +297,7 @@ try {
       jsonTypesRestored,
       plainJSONGuards,
       cacheGetterSafe,
+      crossBlockJSONAliasing,
       ownershipFallback,
     };
   });

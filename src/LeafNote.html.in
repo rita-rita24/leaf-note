@@ -8855,8 +8855,8 @@ function renderBlock(block, parentList, depth = 0) {
   return element;
 }
 
-function _historyIsPlainJSONData(value) {
-  const stack = [value], seen = new Set();
+function _historyIsPlainJSONData(value, seen = new Set()) {
+  const stack = [value];
   while (stack.length) {
     const item = stack.pop();
     if (item === null || typeof item === 'string' || typeof item === 'boolean') continue;
@@ -8893,12 +8893,12 @@ function _prepareHistoryBlockReuse(restoredState) {
       || !listDescriptors.length?.writable
       || Object.entries(listDescriptors).some(([key, descriptor]) => key !== 'length' && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= oldPage.blocks.length || !descriptor.writable || !descriptor.configurable))) return null;
   const elements = new Map(Array.from($('#blocks').children, element => [element.dataset.id, element]));
-  const reused = new Map();
+  const reused = new Map(), seen = new Set();
   const nextBlocks = nextPage.blocks.map(block => {
     const element = elements.get(block.id);
     const rendered = element && _historyRenderedBlocks.get(element);
     if (!rendered || rendered.parentList !== oldPage.blocks
-        || !_historyIsPlainJSONData(rendered.block)
+        || !_historyIsPlainJSONData(rendered.block, seen)
         || JSON.stringify(block) !== rendered.snapshot
         || JSON.stringify(rendered.block) !== rendered.snapshot
         || _historyBlockMarkup(element) !== rendered.markup) return block;
