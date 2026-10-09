@@ -4865,6 +4865,29 @@ let _storageConflictDetected = false;
 let _otherStorageTabsSeen = false;
 let _storageChannel = null;
 const _storageBaseline = { idb: undefined, local: undefined };
+let _storageWriterLease = null;
+let _ownsStorageWriterLease = false;
+
+function _claimStorageWriterLease() {
+  if (!navigator.locks?.request) return Promise.resolve(true);
+  if (_storageWriterLease) return _storageWriterLease;
+  _storageWriterLease = new Promise((resolve) => {
+    // 保存単位のロックだけでは、localStorageのコピーが古い場合や更新に失敗した場合に、
+    // IndexedDBの保存結果を代替保存だけを使うタブへ伝えられない。
+    // 終了時の同期保存も含め、この文書を開いている間は書き込み元を1つに保つ。
+    // 実行コンテキストの終了や異常終了時にはブラウザが保存権を解放する。
+    try {
+      navigator.locks.request(`${STATE_STORAGE_KEY}:writer`, { ifAvailable: true }, (lock) => {
+        _ownsStorageWriterLease = !!lock;
+        resolve(!!lock);
+        if (lock) return new Promise(() => {});
+      }).catch(() => resolve(false));
+    } catch { resolve(false); }
+  });
+  // 保存権を拒否されたタブは再読み込みするまで再試行しない。所有タブが閉じても
+  // コピーが更新されていなければ、読み込んだスナップショットは古い可能性がある。
+  return _storageWriterLease;
+}
 
 // Keep compact fingerprints instead of retaining two additional copies of a
 // potentially large document. Include all content, so equal timestamps from
@@ -5256,16 +5279,20 @@ function _restoreHistoryFocus(snapshot) {
 
 function _applyHistorySnapshot(snapshot) {
   const focusSnapshot = _captureHistoryFocus();
+  const previousLanguage = normalizeUiLanguage(state.uiLanguage);
   const revision = Math.max(Date.now(), getStateRevision(state) + 1);
   state = JSON.parse(snapshot);
   state.lastModifiedAt = Math.max(revision, getStateRevision(state) + 1);
   _clearStartupLossyRepairSnapshot();
   _hasPersistedStateJSON = false;
   _saveSequence++;
-  applyLanguage();
+  state.uiLanguage = normalizeUiLanguage(state.uiLanguage);
+  // Static labels and color-menu handlers depend only on the UI language.
+  // Keep them intact when restoring content in the same language.
+  if (state.uiLanguage !== previousLanguage) applyLanguage();
   applyTheme();
   applyThemeCustom();
-  renderAll();
+  renderAll({ forceEditableSync: true });
   _restoreHistoryFocus(focusSnapshot);
   _doSave();
 }
@@ -5310,6 +5337,11 @@ async function _doSave({ force = false, maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
     }
   };
   const persist = async () => {
+    if (snapshotIsStale() || _storageConflictDetected || !_localStorageStillCurrent()) return false;
+    if (!await _claimStorageWriterLease()) {
+      _notifyStorageConflict();
+      return false;
+    }
     if (snapshotIsStale() || _storageConflictDetected || !_localStorageStillCurrent()) return false;
     try {
       const db = await openDB();
@@ -5451,6 +5483,7 @@ async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, track
 
 function flushStateToLocalStorageSync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES } = {}) {
   try {
+    if (navigator.locks?.request && !_ownsStorageWriterLease) return;
     const snapshot = JSON.stringify(state);
     if (snapshot === _lastPersistedStateJSON || _storageConflictDetected || _otherStorageTabsSeen) return;
     if (_shouldSkipStartupLossyRepairPersist(snapshot)) return;
@@ -8766,7 +8799,7 @@ function scheduleBlockGutterPositions(blocks = null) {
 window.addEventListener('resize', scheduleBlockGutterPositions);
 
 /* ==================== Render Editor ==================== */
-function renderEditor() {
+function renderEditor({ forceEditableSync = false } = {}) {
   let page = getCurrentPage();
   if (page && page.deletedAt) {
     const next = firstLivePageId();
@@ -8784,7 +8817,7 @@ function renderEditor() {
   if (addBtn) addBtn.style.display = 'inline-flex';
 
   const ti = $('#page-title');
-  if (document.activeElement !== ti) ti.textContent = page.title || '';
+  if (forceEditableSync || document.activeElement !== ti) ti.textContent = page.title || '';
   const bl = $('#blocks'); bl.innerHTML = '';
   page.blocks.forEach(b => bl.appendChild(renderBlock(b, page.blocks)));
   updateNumberedList(bl);
@@ -14660,18 +14693,18 @@ document.addEventListener('keydown', async (e) => {
   }
 });
 
-function syncDocumentNameControl() {
+function syncDocumentNameControl({ forceEditableSync = false } = {}) {
   const $documentName = document.getElementById('document-name');
-  if ($documentName && document.activeElement !== $documentName) {
+  if ($documentName && (forceEditableSync || document.activeElement !== $documentName)) {
     $documentName.textContent = getDocumentName();
   }
 }
 
 /* ==================== Render All ==================== */
-function renderAll() {
-  syncDocumentNameControl();
+function renderAll({ forceEditableSync = false } = {}) {
+  syncDocumentNameControl({ forceEditableSync });
   renderSidebar();
-  renderEditor();
+  renderEditor({ forceEditableSync });
 }
 
 const LEAFNOTE_TEST_MODE = (() => {

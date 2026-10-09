@@ -150,3 +150,9 @@ PlaywrightのWebKitは実機Safariではない。Chrome専用のタッチエミ�
 Maskingerの対応表は専用の追加関数で管理し、正規化済み文字列フィールドをその場で変更しない。UTF-8容量は空配列2バイト＋各JSONレコード＋区切りカンマを加算し、巻き戻し時には全体から再計算する。表示と復元索引は対応表の変更で無効化する。clearでは旧索引を即時破棄する。`maskinger-incremental-regressions.mjs`でUnicode・制御文字・孤立サロゲート、同件数置換、保存容量の厳密な境界、超過時の巻き戻しと保存データ、破棄後の復元を検証する。
 
 Python 3.15.0 is stable, but actions/python-versions has no stable Ubuntu 24.04 binary on the audit date. Production manages no Python sources, so its Node/browser jobs do not provision an unused Python runtime. The working source has four Python scripts and requires separate Python syntax validation; this environment constraint is recorded rather than using a release candidate.
+
+### Cross-store persistence and focused history
+
+`node tests/storage-mirror-regressions.mjs LeafNote.html [chrome|firefox|webkit]` runs five isolated browser contexts. It suppresses cross-tab notifications, injects a localStorage mirror write failure after a successful IndexedDB commit, and checks that a fallback-only tab keeps its draft without overwriting stored content. It also checks owner close, denied-tab retry and a fresh reload. Web Locks grants one writer per open document session; a denied tab must reload before saving. Browsers without Web Locks retain the existing fallback path and are not covered by this ownership guarantee.
+
+`node tests/history-focused-regressions.mjs LeafNote.html [chrome|firefox|webkit]` checks focused title and document-name undo/redo five times, plus language, theme and width restoration. Content history with unchanged language preserves the fixed labels and color menu instead of recreating them. Full block rendering remains in place.

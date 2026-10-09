@@ -19,6 +19,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: node tests/storage-mirror-regressions.mjs LeafNote.html
+      - run: node tests/history-focused-regressions.mjs LeafNote.html
       - run: npm run test:modernization
       - run: node tests/check-drag-performance.mjs LeafNote.html
       - run: node tests/selection-geometry-regressions.mjs LeafNote.html
@@ -37,5 +39,9 @@ jobs:
       - run: node tests/selection-geometry-regressions.mjs LeafNote.html webkit
       - run: node tests/maskinger-incremental-regressions.mjs Maskinger.html firefox
       - run: node tests/maskinger-incremental-regressions.mjs Maskinger.html webkit
+      - run: node tests/storage-mirror-regressions.mjs LeafNote.html firefox
+      - run: node tests/storage-mirror-regressions.mjs LeafNote.html webkit
+      - run: node tests/history-focused-regressions.mjs LeafNote.html firefox
+      - run: node tests/history-focused-regressions.mjs LeafNote.html webkit
       - run: node tests/run-cross-browser.mjs firefox
       - run: node tests/run-cross-browser.mjs webkit
