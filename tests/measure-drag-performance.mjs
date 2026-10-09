@@ -11,13 +11,14 @@ import { writeFile } from "node:fs/promises";
 const [before, after, output] = process.argv.slice(2);
 const browser = await launchBrowser();
 const rows = [];
+let c;
 try {
   const target = await requestJson(
     browser.port,
     "/json/new?about:blank",
     "PUT",
   );
-  const c = new CdpClient(target.webSocketDebuggerUrl);
+  c = new CdpClient(target.webSocketDebuggerUrl);
   await c.connect();
   await c.send("Page.enable");
   await c.send("Runtime.enable");
@@ -77,8 +78,8 @@ try {
         );
       }
     }
-  c.close();
 } finally {
+  c?.close();
   await stopBrowser(browser);
 }
 process.exit(0);
