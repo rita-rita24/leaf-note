@@ -74,6 +74,29 @@ try {
     const persisted =
       JSON.stringify(loaded.pages[state.currentPageId].blocks) ===
       JSON.stringify(getCurrentPage().blocks);
+    const scrolled = createInitialState();
+    scrolled.pages[scrolled.currentPageId].blocks = Array.from(
+      { length: 1000 },
+      (_, i) => blk("text", "Scroll block " + i),
+    );
+    api.setState(scrolled);
+    renderAll();
+    await frame();
+    await frame();
+    const scroll = document.querySelector("#editor-scroll");
+    scroll.scrollTop = 3000;
+    const focused = document.querySelectorAll("#blocks .block-content")[120];
+    focused.focus({ preventScroll: true });
+    setCaretByTextOffset(focused, 3);
+    const previousScrollTop = scroll.scrollTop;
+    getCurrentPage().blocks[900].content = "Changed distant block";
+    saveState();
+    undo();
+    const scrollPreserved = Math.abs(scroll.scrollTop - previousScrollTop) <= 1;
+    const caretPreserved =
+      document.activeElement?.dataset.blockId ===
+        getCurrentPage().blocks[120].id &&
+      getCaretTextOffset(document.activeElement) === 3;
     const order = createInitialState();
     order.pages[order.currentPageId].blocks = [
       blk("text", "A"),
@@ -179,6 +202,8 @@ try {
       todoNamed,
       todoChecked,
       todoRestored,
+      scrollPreserved,
+      caretPreserved,
     };
   });
   console.log(JSON.stringify(result));
