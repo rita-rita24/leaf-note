@@ -74,7 +74,7 @@ function requestJson(port, pathName, method = "GET") {
   });
 }
 
-async function waitForDevTools(port, timeoutMs = 10000) {
+async function waitForDevTools(port, timeoutMs = 30000) {
   const startedAt = Date.now();
   let lastError = null;
   while (Date.now() - startedAt < timeoutMs) {
@@ -234,7 +234,9 @@ async function launchBrowser({ profilePath = null } = {}) {
     return browser;
   } catch (error) {
     await stopBrowser(browser);
-    throw error;
+    throw new Error(`Chrome failed to start: ${error.message}\n${stderr}`, {
+      cause: error,
+    });
   }
 }
 
