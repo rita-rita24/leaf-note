@@ -671,7 +671,7 @@
   const $mappingBody = $('#mapping-body');
   const $toast = $('#toast');
 
-  let _hideOriginals = false;
+  const _hideOriginals = false;
   let _toastTimer = 0;
   let _lastAcceptedSourceValue = '';
   let _lastAcceptedRestoreValue = '';
@@ -791,7 +791,7 @@
       sessionStorage.setItem(key, '1');
       sessionStorage.removeItem(key);
       return true;
-    } catch (_) {
+    } catch  {
       return false;
     }
   }
@@ -982,11 +982,11 @@
         _saveMappings();
         _showToast('保存済み対応表の一部を安全な上限に合わせて読み込みました。');
       }
-    } catch (_) {
+    } catch  {
       _resetMappingState();
       try {
         sessionStorage.removeItem(STORAGE_KEY);
-      } catch (_) {}
+      } catch  {}
     }
   }
 
@@ -1000,7 +1000,7 @@
     }
     try {
       sessionStorage.setItem(STORAGE_KEY, serialized);
-    } catch (_) {
+    } catch  {
       _showToast('対応表の保存に失敗しました。タブ内のメモリ上では処理を継続します。');
     }
   }
@@ -1905,7 +1905,7 @@
         if (!copied) throw new Error('Copy command failed');
       }
       _setCopyButtonFeedback(button, 'コピーしました');
-    } catch (_) {
+    } catch  {
       _setCopyButtonFeedback(button, 'コピー失敗');
     }
   }

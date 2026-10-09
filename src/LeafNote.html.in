@@ -2757,7 +2757,13 @@ const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 const $ = qs;
 const $$ = qsa;
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-const escapeHTML = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+const HTML_TEXT_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\u00a0': '&nbsp;' };
+const escapeHTML = (value) => {
+  if (typeof value === 'string') return value.replace(/[&<>\u00a0]/g, (character) => HTML_TEXT_ESCAPES[character]);
+  const element = document.createElement('div');
+  element.textContent = value;
+  return element.innerHTML;
+};
 const decodeHTMLText = (s) => { const d = document.createElement('textarea'); d.innerHTML = s; return d.value; };
 const isIMEComposingEvent = (e) => !!(e && (e.isComposing || e.keyCode === 229 || e.which === 229));
 const cssEscape = (value) => {
@@ -4149,14 +4155,14 @@ function _normalizePageIconValue(value, { onTruncate = null } = {}) {
 function _syncPlainTextElementValue(el, value) {
   if (!el || el.textContent === value) return;
   el.textContent = value;
-  try { placeCaret(el, 'end'); } catch (_) {}
+  try { placeCaret(el, 'end'); } catch  {}
 }
 
 function _normalizeRichEditableContent(el, { maxBytes = RICH_HTML_FIELD_MAX_BYTES, onTruncate = null } = {}) {
   const result = _normalizeRichHtmlFieldResult(el ? el.innerHTML : '', { maxBytes, onTruncate });
   if (el && el.innerHTML !== result.value) {
     el.innerHTML = result.value;
-    try { placeCaret(el, 'end'); } catch (_) {}
+    try { placeCaret(el, 'end'); } catch  {}
   }
   return result.value;
 }
@@ -4165,7 +4171,7 @@ function _normalizePlainInputControlValue(control, { maxChars = TEXT_FIELD_MAX_C
   const result = _normalizePlainTextFieldResult(control ? control.value : '', { maxChars, onTruncate });
   if (control && control.value !== result.value) {
     control.value = result.value;
-    try { control.setSelectionRange(control.value.length, control.value.length); } catch (_) {}
+    try { control.setSelectionRange(control.value.length, control.value.length); } catch  {}
   }
   return result.value;
 }
@@ -4256,7 +4262,7 @@ function normalizeImageUrl(value, maxBytes = LOCAL_FILE_MAX_BYTES, { onTruncate 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
     if (isPrivateNetworkUrl(textUrl)) return '';
     return _hasRasterImageExtension(parsed.pathname) ? textUrl : '';
-  } catch (_) {
+  } catch  {
     return '';
   }
 }
@@ -4333,7 +4339,7 @@ function isPrivateNetworkUrl(value) {
   let parsed;
   try {
     parsed = new URL(String(value || ''));
-  } catch (_) {
+  } catch  {
     return true;
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return true;
@@ -4898,7 +4904,7 @@ function _storageSnapshotMatchesBaseline(source, snapshot) {
 function _localStorageStillCurrent() {
   try {
     return _storageSnapshotMatchesBaseline('local', localStorage.getItem(STATE_STORAGE_KEY));
-  } catch (_) {
+  } catch  {
     // IndexedDB can still save when localStorage is disabled.
     return true;
   }
@@ -4910,7 +4916,7 @@ function _hasUnsavedState() {
 
 function _announceStorageSave(source, snapshot) {
   try { _storageChannel?.postMessage({ kind: 'saved', source, signature: _storageSnapshotSignature(snapshot) }); }
-  catch (_) {}
+  catch  {}
 }
 
 function _connectStorageTabs() {
@@ -4924,7 +4930,7 @@ function _connectStorageTabs() {
           && data.signature !== _storageBaseline[data.source]) _notifyStorageConflict();
     };
     _storageChannel.postMessage({ kind: 'hello' });
-  } catch (_) {}
+  } catch  {}
 }
 
 function _markStartupLossyRepairSnapshot(snapshot = JSON.stringify(state)) {
@@ -5222,7 +5228,7 @@ function _captureHistoryFocus() {
 function _focusHistoryTarget($target, snapshot) {
   if (!$target) return false;
   try { $target.focus({ preventScroll: true }); }
-  catch (_) { $target.focus(); }
+  catch  { $target.focus(); }
   if (snapshot?.affinity === 'end') placeCaret($target, 'end');
   else if (Number.isFinite(snapshot?.offset)) setCaretByTextOffset($target, Math.max(0, snapshot.offset));
   else placeCaret($target, 'end');
@@ -5331,7 +5337,7 @@ async function _doSave({ force = false, maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
               if (snapshotIsStale()) { blocked = true; return; }
               store.put(JSON.parse(snapshot), 'app-state');
             } catch (error) {
-              try { tx.abort(); } catch (_) {}
+              try { tx.abort(); } catch  {}
               reject(error);
             }
           };
@@ -5361,10 +5367,10 @@ async function _doSave({ force = false, maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
         localStorage.setItem(STATE_STORAGE_KEY, snapshot);
         _rememberStorageSnapshot('local', snapshot);
         _announceStorageSave('local', snapshot);
-      } catch (_) {}
+      } catch  {}
       clearSaveStatus();
       return true;
-    } catch (e) {
+    } catch  {
       if (_storageConflictDetected || !_localStorageStillCurrent()) return false;
       if (snapshotIsStale()) {
         resaveIfLiveStateMoved();
@@ -5391,7 +5397,7 @@ async function _doSave({ force = false, maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
         const msg = t('saveStatus.idbFallback');
         if (_lastSaveFailureMessage !== msg) setSaveStatus('warning', msg);
         _lastSaveFailureMessage = msg;
-      } catch (_) {}
+      } catch  {}
       if (!didFallbackSave) {
         const msg = t('saveStatus.failed');
         setSaveStatus('error', msg, { persistent: true });
@@ -5412,7 +5418,7 @@ async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, track
       const raw = localStorage.getItem(STATE_STORAGE_KEY);
       if (trackStorageBaseline) _rememberStorageSnapshot('local', raw);
       if (raw) return _parseStatePayloadWithLimit(raw, maxPayloadBytes);
-    } catch (_) {}
+    } catch  {}
     return null;
   };
   const readDB = async (dbName) => {
@@ -5436,7 +5442,7 @@ async function loadStateAsync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTES, track
       readDB(DB_NAME).catch(() => null),
       Promise.resolve().then(readLocal).catch(() => null)
     ]);
-  } catch (_) {}
+  } catch  {}
   if (dbState && localState) {
     return getStateRevision(localState) > getStateRevision(dbState) ? localState : dbState;
   }
@@ -5456,7 +5462,7 @@ function flushStateToLocalStorageSync({ maxPayloadBytes = STATE_PAYLOAD_MAX_BYTE
     _lastPersistedStateJSON = snapshot;
     _hasPersistedStateJSON = false;
     _saveSequence++;
-  } catch (_) {
+  } catch  {
     setSaveStatus('error', t('saveStatus.unloadFailed'), { persistent: true });
   }
 }
@@ -5579,6 +5585,12 @@ function openOverlay($overlay, focusTarget) {
 
 function closeOverlay($overlay) {
   if (!$overlay || $overlay.hidden) return;
+  if ($overlay.id === 'search-overlay') {
+    cancelSearchResults();
+    _searchComposing = false;
+    _searchTextCache.clear();
+    _searchTextCacheChars = 0;
+  }
   $overlay.hidden = true;
   $overlay.setAttribute('aria-hidden', 'true');
   syncOverlayInertState();
@@ -5586,7 +5598,7 @@ function closeOverlay($overlay) {
   overlayFocusReturn.delete($overlay);
   if ($returnTo && document.contains($returnTo) && !$returnTo.closest('[inert]')) {
     try { $returnTo.focus({ preventScroll: true }); }
-    catch (_) { $returnTo.focus(); }
+    catch  { $returnTo.focus(); }
   } else {
     const $top = getTopOpenOverlay();
     const $fallback = $top ? getFocusableElements($top)[0] : $('#sidebar-open');
@@ -6025,7 +6037,7 @@ function normalizeStateShape(rawState) {
     return out;
   };
 
-  let rawDocumentName = (typeof rawState.documentName === 'string' && rawState.documentName.trim())
+  const rawDocumentName = (typeof rawState.documentName === 'string' && rawState.documentName.trim())
     ? rawState.documentName
     : rawState.workspaceName;
   const out = {
@@ -6752,7 +6764,7 @@ function showPageContextMenu(e, pid) {
           const selection = window.getSelection();
           selection.removeAllRanges();
           selection.addRange(range);
-        } catch (_) {}
+        } catch  {}
       };
       if (state.currentPageId !== pid) { switchPage(pid); setTimeout(focusTitle, 50); }
       else focusTitle();
@@ -7195,7 +7207,7 @@ function htmlToMarkdownInline(html) {
       if (out.length > HTML_TO_MARKDOWN_MAX_OUTPUT_CHARS) return fallbackText();
       outputByNode.set(node, out);
     }
-  } catch (_) {
+  } catch  {
     return fallbackText();
   }
   return (outputByNode.get(root) || '').replace(/\u00a0/g, ' ');
@@ -8540,7 +8552,7 @@ async function readMarkdownImportFile(file) {
       return null;
     }
     return text;
-  } catch (_) {
+  } catch  {
     await showAlert(t('dialog.fileReadFailed'), { title: t('common.notice'), okText: t('common.ok') });
     return null;
   }
@@ -8570,7 +8582,7 @@ function importMarkdownAsNewPage() {
     try {
       blocks = parseMarkdownToBlocks(body);
       sanitizeBlocksDeep(blocks);
-    } catch (_) {
+    } catch  {
       await showAlert(t('dialog.markdownImportFailed'), { title: t('common.notice'), okText: t('common.ok') });
       return;
     }
@@ -8686,7 +8698,6 @@ function _getRangeLineCount($content) {
   range.selectNodeContents($content);
   const lineHeight = _getLineHeightPx($content);
   const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0);
-  if (range.detach) range.detach();
   if (!rects.length) return 1;
 
   const tops = [];
@@ -8729,20 +8740,27 @@ function updateBlockGutterPosition($block, pending = null) {
   else if ($gutter.style.top !== value) $gutter.style.top = value;
 }
 
-function updateBlockGutterPositions() {
+function updateBlockGutterPositions(blocks = qsa('#blocks .block')) {
   // Read every block before changing styles, avoiding a forced layout per block.
   const pending = [];
-  qsa('#blocks .block').forEach(($block) => updateBlockGutterPosition($block, pending));
+  blocks.forEach(($block) => { if ($block.isConnected) updateBlockGutterPosition($block, pending); });
   pending.forEach(([$gutter, value]) => {
     if ($gutter.style.top !== value) $gutter.style.top = value;
   });
 }
 
-function scheduleBlockGutterPositions() {
-  if (_blockGutterPositionFrame) cancelAnimationFrame(_blockGutterPositionFrame);
+const _pendingGutterBlocks = new Set();
+let _allGuttersPending = false;
+function scheduleBlockGutterPositions(blocks = null) {
+  if (!Array.isArray(blocks)) _allGuttersPending = true;
+  else for (const block of blocks) if (block) _pendingGutterBlocks.add(block);
+  if (_blockGutterPositionFrame) return;
   _blockGutterPositionFrame = requestAnimationFrame(() => {
     _blockGutterPositionFrame = null;
-    updateBlockGutterPositions();
+    const pending = _allGuttersPending ? undefined : [..._pendingGutterBlocks];
+    _allGuttersPending = false;
+    _pendingGutterBlocks.clear();
+    updateBlockGutterPositions(pending);
   });
 }
 window.addEventListener('resize', scheduleBlockGutterPositions);
@@ -8979,8 +8997,8 @@ function renderCodeBlock(block, el, parentList) {
     try {
       codeInner.className = 'language-' + mapLangToPrism(block.language || 'plain text');
       codeInner.textContent = raw;
-      Prism.highlightElement(codeInner);
-    } catch (e) { /* fallback: leave plain */ }
+      window.Prism.highlightElement(codeInner);
+    } catch  { /* fallback: leave plain */ }
     if (document.activeElement === codeInner && caret != null) {
       setCaretByTextOffset(codeInner, caret);
     }
@@ -9542,7 +9560,7 @@ function renderRawTextBlock(block, el, parentList) {
     }).value;
     if (normalized !== input.value) {
       input.value = normalized;
-      try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) {}
+      try { input.setSelectionRange(input.value.length, input.value.length); } catch  {}
     }
     block.content = normalized;
   };
@@ -10226,7 +10244,7 @@ function renderMermaidDiagramPreview($preview, source) {
       $preview.appendChild($diagram);
     }
     else _appendMermaidFallback($preview, text);
-  } catch (_) {
+  } catch  {
     $preview.textContent = '';
     _appendMermaidFallback($preview, text, { truncate: true });
   }
@@ -10252,7 +10270,7 @@ function renderFootnoteBlock(block, el, parentList) {
     }).value;
     if (block.label !== labelInput.value) {
       labelInput.value = block.label;
-      try { labelInput.setSelectionRange(labelInput.value.length, labelInput.value.length); } catch (_) {}
+      try { labelInput.setSelectionRange(labelInput.value.length, labelInput.value.length); } catch  {}
     }
     saveState();
   });
@@ -10270,7 +10288,7 @@ function renderFootnoteBlock(block, el, parentList) {
     }).value;
     if (block.content !== input.value) {
       input.value = block.content;
-      try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) {}
+      try { input.setSelectionRange(input.value.length, input.value.length); } catch  {}
     }
     saveState();
   });
@@ -10311,7 +10329,7 @@ function renderLinkReferenceBlock(block, el, parentList) {
       }).value;
       if (block[key] !== input.value) {
         input.value = block[key];
-        try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) {}
+        try { input.setSelectionRange(input.value.length, input.value.length); } catch  {}
       }
       saveState();
     });
@@ -10435,7 +10453,7 @@ function renderGovernanceBlock(block, el, parentList, depth = 0) {
         });
         if (block[field.key] !== $control.value) {
           $control.value = block[field.key];
-          try { $control.setSelectionRange($control.value.length, $control.value.length); } catch (_) {}
+          try { $control.setSelectionRange($control.value.length, $control.value.length); } catch  {}
         }
         saveState();
       });
@@ -10533,7 +10551,7 @@ function _renderSpecField(block, field, config) {
       }).value;
       if (block[field.key] !== $control.value) {
         $control.value = block[field.key];
-        try { $control.setSelectionRange($control.value.length, $control.value.length); } catch (_) {}
+        try { $control.setSelectionRange($control.value.length, $control.value.length); } catch  {}
       }
       saveState();
     });
@@ -10547,7 +10565,7 @@ function _renderSpecField(block, field, config) {
       }).value;
       if (block[field.key] !== $control.value) {
         $control.value = block[field.key];
-        try { $control.setSelectionRange($control.value.length, $control.value.length); } catch (_) {}
+        try { $control.setSelectionRange($control.value.length, $control.value.length); } catch  {}
       }
       saveState();
     });
@@ -10583,7 +10601,7 @@ function _renderSpecColumnControl(block, column, rowIndex, key) {
       }).value;
       if (column[key] !== $control.value) {
         $control.value = column[key];
-        try { $control.setSelectionRange($control.value.length, $control.value.length); } catch (_) {}
+        try { $control.setSelectionRange($control.value.length, $control.value.length); } catch  {}
       }
       saveState();
     });
@@ -10778,7 +10796,7 @@ async function loadImageFromFile(file, block) {
     saveState();
     renderEditor();
     return true;
-  } catch (_) {
+  } catch  {
     await showAlert(t('dialog.fileReadFailed'), { title: t('common.notice'), okText: t('common.ok') });
     return false;
   }
@@ -10793,7 +10811,7 @@ async function loadFileFromFile(file, block) {
     saveState();
     renderEditor();
     return true;
-  } catch (_) {
+  } catch  {
     await showAlert(t('dialog.fileReadFailed'), { title: t('common.notice'), okText: t('common.ok') });
     return false;
   }
@@ -10822,7 +10840,7 @@ async function _insertImageBlockFromFile(file, block, options = {}) {
     saveState();
     renderEditor();
     return true;
-  } catch (_) {
+  } catch  {
     await showAlert(t('dialog.fileReadFailed'), { title: t('common.notice'), okText: t('common.ok') });
     return false;
   }
@@ -10849,7 +10867,7 @@ async function _insertFileBlockFromFile(file, block, options = {}) {
     saveState();
     renderEditor();
     return true;
-  } catch (_) {
+  } catch  {
     await showAlert(t('dialog.fileReadFailed'), { title: t('common.notice'), okText: t('common.ok') });
     return false;
   }
@@ -10938,7 +10956,7 @@ async function downloadFileBlock(block) {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 0);
-  } catch (_) {
+  } catch  {
     await showAlert(t('dialog.fileDownloadFailed'), { title: t('common.notice'), okText: t('common.ok') });
   }
 }
@@ -11156,10 +11174,13 @@ function updateNumberedList(container) {
       if (c === 0) c = Number.isFinite(start) ? start : 1;
       else c++;
       const p = el.querySelector(':scope > .block-prefix');
-      if (p) p.textContent = c + '.';
+      const number = c + '.';
+      if (p && p.textContent !== number) p.textContent = number;
     }
     else c = 0;
-    qsa(':scope > .nested-children, :scope > .toggle-children', el).forEach(updateNumberedList);
+    if (canBlockTypeContainChildren(el.dataset.type)) {
+      qsa(':scope > .nested-children, :scope > .toggle-children', el).forEach(updateNumberedList);
+    }
   });
 }
 
@@ -11253,13 +11274,19 @@ function moveBlockWithRender(sid, tid, pos) {
   const reuse = source && target && source.list === target.list && sourceEl && targetEl
     && sourceEl.parentElement === targetEl.parentElement
     && !qs('#blocks .block[data-type="toc"]');
+  const previous = sourceEl?.previousElementSibling, next = sourceEl?.nextElementSibling;
   if (!moveBlock(sid, tid, pos)) return false;
   if (!reuse) { renderEditor(); return true; }
   sourceEl.classList.remove('drop-above', 'drop-below', 'dragging');
   targetEl.classList.remove('drop-above', 'drop-below');
   targetEl.parentElement.insertBefore(sourceEl, pos === 'before' ? targetEl : targetEl.nextSibling);
-  updateNumberedList(qs('#blocks'));
-  scheduleBlockGutterPositions();
+  updateNumberedList(sourceEl.parentElement);
+  // Same-list moves keep width and nesting depth. Refresh the moved subtree,
+  // adjacent rows and numbered rows; pending full renders/resizes still win.
+  scheduleBlockGutterPositions([
+    sourceEl, previous, next, sourceEl.previousElementSibling, sourceEl.nextElementSibling,
+    ...qsa('.block', sourceEl), ...qsa('#blocks .block[data-type="numbered"]')
+  ]);
   return true;
 }
 function moveBlock(sid, tid, pos) {
@@ -11303,7 +11330,7 @@ function _tablePreservationBlock(block) {
   let markdown = '';
   try {
     markdown = tableBlockToMarkdown(JSON.parse(JSON.stringify(block)), '', { maxBytes: RICH_HTML_FIELD_MAX_BYTES });
-  } catch (_) {
+  } catch  {
     markdown = (block.cells || []).map((row) => (Array.isArray(row) ? row : [])
       .map((cell) => stripHTMLToText(cell || '').replace(/\s+/g, ' ').trim())
       .join('\t')).join('\n');
@@ -11720,7 +11747,7 @@ function _readLeafNoteClipboard(cb) {
   if (marker) {
     try {
       return { text: decodeURIComponent(marker[1]), html, isMarkdown: true };
-    } catch (_) {
+    } catch  {
       return { text: '', html, isMarkdown: false };
     }
   }
@@ -11733,7 +11760,7 @@ function _tryExecCommand(command, value) {
     return value === undefined
       ? document.execCommand(command) === true
       : document.execCommand(command, false, value) === true;
-  } catch (_) {
+  } catch  {
     return false;
   }
 }
@@ -11760,7 +11787,7 @@ function _insertHTMLIntoTarget(target, html) {
     selection.removeAllRanges();
     selection.addRange(range);
     return true;
-  } catch (_) {
+  } catch  {
     return false;
   }
 }
@@ -11794,9 +11821,9 @@ function _utf8ByteLength(value) {
   const text = String(value || '');
   if (!NON_ASCII_TEXT_RE.test(text)) return text.length;
   try { return new Blob([text]).size; }
-  catch (_) {
+  catch  {
     try { return new TextEncoder().encode(text).length; }
-    catch (_) { return text.length; }
+    catch  { return text.length; }
   }
 }
 
@@ -11828,7 +11855,7 @@ function _restoreSelectionRange(range) {
     sel.removeAllRanges();
     sel.addRange(range);
     return true;
-  } catch (_) {
+  } catch  {
     return false;
   }
 }
@@ -11998,7 +12025,7 @@ function _insertPlainTextIntoTarget(target, text) {
       const end = Math.max(start, target.selectionEnd);
       target.value = target.value.slice(0, start) + insertText + target.value.slice(end);
       const caret = start + insertText.length;
-      try { target.setSelectionRange(caret, caret); } catch (_) {}
+      try { target.setSelectionRange(caret, caret); } catch  {}
       return true;
     }
     const selection = window.getSelection && window.getSelection();
@@ -12016,7 +12043,7 @@ function _insertPlainTextIntoTarget(target, text) {
     selection.removeAllRanges();
     selection.addRange(range);
     return true;
-  } catch (_) {
+  } catch  {
     return false;
   }
 }
@@ -12471,7 +12498,7 @@ function _setInlineSelection(firstNode, lastNode = firstNode) {
     selection.removeAllRanges();
     selection.addRange(range);
     return true;
-  } catch (_) {
+  } catch  {
     return false;
   }
 }
@@ -12516,7 +12543,7 @@ function _applyInlineCommandRangeFallback(command, value, savedRange) {
     if (command === 'unlink') {
       const anchors = Array.from(editable.querySelectorAll('a')).filter((anchor) => {
         try { return range.intersectsNode(anchor); }
-        catch (_) { return false; }
+        catch  { return false; }
       });
       const closest = _closestInlineElement(range.commonAncestorContainer, 'a', editable);
       if (closest && !anchors.includes(closest)) anchors.unshift(closest);
@@ -12561,7 +12588,7 @@ function _applyInlineCommandRangeFallback(command, value, savedRange) {
     selection.removeAllRanges();
     selection.addRange(range);
     return true;
-  } catch (_) {
+  } catch  {
     return false;
   }
 }
@@ -12877,7 +12904,7 @@ function applySidebarWidth(px) {
 }
 function loadSidebarWidth() {
   const _safeLocalStorageGet = (key) => {
-    try { return localStorage.getItem(key); } catch (_) { return null; }
+    try { return localStorage.getItem(key); } catch  { return null; }
   };
   const saved = parseInt(_safeLocalStorageGet(SIDEBAR_WIDTH_KEY) || '', 10);
   applySidebarWidth(Number.isFinite(saved) ? saved : SIDEBAR_DEFAULT);
@@ -12885,7 +12912,7 @@ function loadSidebarWidth() {
 loadSidebarWidth();
 (() => {
   const _safeLocalStorageSet = (key, value) => {
-    try { localStorage.setItem(key, value); } catch (_) {}
+    try { localStorage.setItem(key, value); } catch  {}
   };
   const resizer = $('#sidebar-resizer');
   const sidebar = $('#sidebar');
@@ -13442,7 +13469,7 @@ async function readResponseBlobWithLimit(res, {
           : new Uint8Array(value || []);
       const nextTotal = total + chunk.byteLength;
       if (nextTotal > limit) {
-        try { await reader.cancel(`image is larger than ${_formatFileSize(limit)}`); } catch (_) {}
+        try { await reader.cancel(`image is larger than ${_formatFileSize(limit)}`); } catch  {}
         if (typeof abort === 'function') abort();
         throw new Error(`image is larger than ${_formatFileSize(limit)}`);
       }
@@ -13450,7 +13477,7 @@ async function readResponseBlobWithLimit(res, {
       total = nextTotal;
     }
   } finally {
-    try { reader.releaseLock(); } catch (_) {}
+    try { reader.releaseLock(); } catch  {}
   }
   return new Blob(chunks, { type: contentType });
 }
@@ -13489,7 +13516,7 @@ async function readResponseTextWithLimit(res, {
           : new Uint8Array(value || []);
       const nextTotal = total + chunk.byteLength;
       if (nextTotal > limit) {
-        try { await reader.cancel(`HTML source is larger than ${_formatFileSize(limit)}`); } catch (_) {}
+        try { await reader.cancel(`HTML source is larger than ${_formatFileSize(limit)}`); } catch  {}
         if (typeof abort === 'function') abort();
         throw new Error(`HTML source is larger than ${_formatFileSize(limit)}`);
       }
@@ -13499,7 +13526,7 @@ async function readResponseTextWithLimit(res, {
     text += decoder.decode();
     return text;
   } finally {
-    try { reader.releaseLock(); } catch (_) {}
+    try { reader.releaseLock(); } catch  {}
   }
 }
 
@@ -13537,7 +13564,7 @@ function assertPublicRemoteImageFetchUrl(url) {
   let parsed;
   try {
     parsed = new URL(String(url || ''));
-  } catch (_) {
+  } catch  {
     throw new Error('invalid remote image URL');
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -13745,9 +13772,21 @@ const searchResults = $('#search-results');
 let searchSelectedIdx = 0, searchItems = [];
 let _searchRenderTimer = null;
 let _searchRenderToken = 0;
+let _searchComposing = false;
+const SEARCH_TEXT_CACHE_MAX_CHARS = 524288;
+const SEARCH_TEXT_CACHE_MAX_ENTRIES = 3000;
+const _searchTextCache = new Map();
+let _searchTextCacheChars = 0;
+
+function cancelSearchResults() {
+  if (_searchRenderTimer) clearTimeout(_searchRenderTimer);
+  _searchRenderTimer = null;
+  _searchRenderToken++;
+}
 
 function openSearchModal(preset = '') {
   if (typeof BlockSelection !== 'undefined') BlockSelection.clear();
+  _searchComposing = false;
   const safePreset = (typeof preset === 'string') ? preset : '';
   searchInput.value = safePreset;
   renderSearchResults(safePreset);
@@ -13755,7 +13794,7 @@ function openSearchModal(preset = '') {
     if (safePreset) {
       // Place caret at end so users can keep typing
       const pos = searchInput.value.length;
-      try { searchInput.setSelectionRange(pos, pos); } catch (_) {}
+      try { searchInput.setSelectionRange(pos, pos); } catch  {}
     }
     return searchInput;
   });
@@ -13763,11 +13802,28 @@ function openSearchModal(preset = '') {
 function closeSearchModal() { closeOverlay(searchOverlay); }
 
 function _htmlFieldSearchText(value) {
-  return stripHTMLToText(value || '').replace(/\s+/g, ' ').trim();
+  const source = value || '';
+  // Key by the actual field value, so edits, undo and imports cannot reuse stale text.
+  // Plain text already has a parser-free path; cache only fields needing HTML parsing.
+  const cacheable = typeof source === 'string' && /[<&\r\u0000]/.test(source);
+  if (cacheable && _searchTextCache.has(source)) return _searchTextCache.get(source);
+  const text = stripHTMLToText(source).replace(/\s+/g, ' ').trim();
+  if (cacheable) {
+    const chars = source.length + text.length;
+    if (chars <= SEARCH_TEXT_CACHE_MAX_CHARS) {
+      if (_searchTextCacheChars + chars > SEARCH_TEXT_CACHE_MAX_CHARS || _searchTextCache.size >= SEARCH_TEXT_CACHE_MAX_ENTRIES) {
+        _searchTextCache.clear();
+        _searchTextCacheChars = 0;
+      }
+      _searchTextCache.set(source, text);
+      _searchTextCacheChars += chars;
+    }
+  }
+  return text;
 }
 
 function flattenTextFromBlocks(blocks) {
-  let out = [];
+  const out = [];
   const walk = (bs, depth = 0) => {
     if (!Array.isArray(bs) || depth > BLOCK_MAX_DEPTH) return;
     for (const b of bs) {
@@ -13996,19 +14052,26 @@ function _canRenderSearchImmediately() {
 }
 
 function scheduleSearchResults(q) {
+  if (searchOverlay.hidden || _searchComposing) return;
   if (_canRenderSearchImmediately()) { renderSearchResults(q); return; }
   const token = ++_searchRenderToken;
   if (_searchRenderTimer) clearTimeout(_searchRenderTimer);
   _searchRenderTimer = setTimeout(() => {
     _searchRenderTimer = null;
-    if (token !== _searchRenderToken) return;
+    if (token !== _searchRenderToken || searchOverlay.hidden || _searchComposing) return;
     renderSearchResults(q);
   }, SEARCH_INPUT_DEBOUNCE_MS);
 }
 
-searchInput.addEventListener('input', () => scheduleSearchResults(searchInput.value));
+searchInput.addEventListener('compositionstart', () => { _searchComposing = true; cancelSearchResults(); });
+searchInput.addEventListener('compositionend', () => { _searchComposing = false; scheduleSearchResults(searchInput.value); });
+searchInput.addEventListener('input', (e) => {
+  if (isIMEComposingEvent(e)) { cancelSearchResults(); return; }
+  scheduleSearchResults(searchInput.value);
+});
 searchInput.addEventListener('keydown', (e) => {
-  if (isIMEComposingEvent(e)) return;
+  if (_searchComposing || isIMEComposingEvent(e)) return;
+  if (_searchRenderTimer && ['Enter', 'ArrowDown', 'ArrowUp'].includes(e.key)) renderSearchResults(searchInput.value);
   if (e.key === 'Escape') { e.preventDefault(); closeSearchModal(); return; }
   if (e.key === 'ArrowDown') { e.preventDefault(); if (searchItems.length) { searchItems.forEach(i => i.classList.remove('selected')); searchSelectedIdx = (searchSelectedIdx + 1) % searchItems.length; searchItems[searchSelectedIdx].classList.add('selected'); searchItems[searchSelectedIdx].scrollIntoView({block: 'nearest'}); } return; }
   if (e.key === 'ArrowUp')   { e.preventDefault(); if (searchItems.length) { searchItems.forEach(i => i.classList.remove('selected')); searchSelectedIdx = (searchSelectedIdx - 1 + searchItems.length) % searchItems.length; searchItems[searchSelectedIdx].classList.add('selected'); searchItems[searchSelectedIdx].scrollIntoView({block: 'nearest'}); } return; }
@@ -14355,7 +14418,7 @@ function _setLeafNoteClipboardData(cb, markdown) {
     try {
       cb.setData(type, value);
       return true;
-    } catch (_) {
+    } catch  {
       return false;
     }
   };
@@ -14389,7 +14452,7 @@ function _copyTextViaExecCommand(text) {
     textarea.focus();
     textarea.select();
     ok = document.execCommand('copy') === true;
-  } catch (_) {
+  } catch  {
     ok = false;
   } finally {
     document.body.removeChild(textarea);
@@ -14397,10 +14460,10 @@ function _copyTextViaExecCommand(text) {
       try {
         selection.removeAllRanges();
         ranges.forEach((range) => selection.addRange(range));
-      } catch (_) {}
+      } catch  {}
     }
     if (active && typeof active.focus === 'function') {
-      try { active.focus(); } catch (_) {}
+      try { active.focus(); } catch  {}
     }
   }
   return ok;
@@ -14412,7 +14475,7 @@ async function _writeClipboardTextFallback(markdown, failureKey) {
     if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') throw new Error('Clipboard API unavailable');
     await navigator.clipboard.writeText(text);
     return true;
-  } catch (_) {
+  } catch  {
     if (_copyTextViaExecCommand(text)) return true;
   }
   await showAlert(t(failureKey), { title: t('common.notice'), okText: t('common.ok') });
@@ -14528,7 +14591,7 @@ function renderAll() {
 
 const LEAFNOTE_TEST_MODE = (() => {
   try { return new URLSearchParams(location.search).get('test') === '1'; }
-  catch (_) { return false; }
+  catch  { return false; }
 })();
 let _leafNoteReadyResolved = false;
 let _resolveLeafNoteReady = () => {};
@@ -14583,7 +14646,7 @@ function exposeLeafNoteTestApi() {
       sanitizeStateInPlace(state);
       _clearStartupLossyRepairSnapshot();
       _storageConflictDetected = false;
-      try { _rememberStorageSnapshot('local', localStorage.getItem(STATE_STORAGE_KEY)); } catch (_) {}
+      try { _rememberStorageSnapshot('local', localStorage.getItem(STATE_STORAGE_KEY)); } catch  {}
       _lastPersistedStateJSON = JSON.stringify(state);
       _hasPersistedStateJSON = false;
       _saveSequence++;

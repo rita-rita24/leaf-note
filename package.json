@@ -4,18 +4,29 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "^22.13.0 || >=24"
   },
   "scripts": {
     "build": "node scripts/build-app.mjs && node scripts/sync-distribution.mjs",
     "check:distribution": "node scripts/build-app.mjs --check && node scripts/sync-distribution.mjs --check",
-    "pretest": "npm run check:distribution",
+    "pretest": "npm run check",
     "test": "node tests/run-browser.mjs all",
     "test:unit": "node tests/run-browser.mjs unit",
     "test:integration": "node tests/run-browser.mjs integration",
-    "test:coverage": "node tests/run-browser.mjs coverage"
+    "test:coverage": "node tests/run-browser.mjs coverage",
+    "check:source": "node scripts/check-source.mjs",
+    "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\" package.json",
+    "check:format": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\" package.json",
+    "test:modernization": "node tests/modernization-regressions.mjs",
+    "check": "npm run check:source && npm run check:format && npm run check:distribution"
   },
   "devDependencies": {
+    "acorn": "8.19.0",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "parse5": "8.0.1",
+    "postcss": "8.5.29",
+    "prettier": "3.9.9",
     "terser": "5.51.2"
   }
 }
