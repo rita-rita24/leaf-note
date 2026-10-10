@@ -212,6 +212,36 @@ try {
     const crossBlockJSONAliasing =
       independentMetadata &&
       getCurrentPage().blocks[1].metadata.value === "Original";
+    const prototypeDraft = createInitialState();
+    prototypeDraft.pages[prototypeDraft.currentPageId].blocks = [
+      blk("text", "Prototype first"),
+      blk("text", "Other"),
+    ];
+    api.setState(prototypeDraft);
+    class BlockList extends Array {}
+    getCurrentPage().blocks = BlockList.from(getCurrentPage().blocks);
+    renderAll();
+    _pushUndoStackSnapshot(JSON.stringify(state));
+    getCurrentPage().blocks[1].content = "Changed";
+    undo();
+    const parentPrototypeRestored =
+      Object.getPrototypeOf(getCurrentPage().blocks) === Array.prototype;
+    const styledDraft = createInitialState();
+    styledDraft.pages[styledDraft.currentPageId].blocks = [
+      blk("text", "Style first"),
+      blk("text", "Other"),
+    ];
+    api.setState(styledDraft);
+    renderAll();
+    await frame();
+    const styledBlock = document.querySelector("#blocks > .block");
+    styledBlock.querySelector(".block-gutter").style.opacity = "0.25";
+    _pushUndoStackSnapshot(JSON.stringify(state));
+    getCurrentPage().blocks[1].content = "Changed";
+    undo();
+    const dirtyGutterRebuilt =
+      document.querySelector("#blocks > .block") !== styledBlock &&
+      document.querySelector("#blocks .block-gutter").style.opacity === "";
     const getterDraft = createInitialState();
     getterDraft.pages[getterDraft.currentPageId].blocks = [
       blk("text", "Getter fixture"),
@@ -298,6 +328,8 @@ try {
       plainJSONGuards,
       cacheGetterSafe,
       crossBlockJSONAliasing,
+      parentPrototypeRestored,
+      dirtyGutterRebuilt,
       ownershipFallback,
     };
   });

@@ -8838,7 +8838,7 @@ let _editorRenderedPageId = null;
 function _historyBlockMarkup(element) {
   // Gutter alignment is derived from layout and does not alter the model.
   // Every other markup change prevents reuse, including selection and edits.
-  return element.outerHTML.replace(/(<div class="block-gutter") style="top: [^"]*"/, '$1');
+  return element.outerHTML.replace(/(<div class="block-gutter") style="top: -?(?:\d+(?:\.\d+)?|\.\d+)px;"/, '$1');
 }
 
 function renderBlock(block, parentList, depth = 0) {
@@ -8888,7 +8888,8 @@ function _prepareHistoryBlockReuse(restoredState) {
       || _editorRenderedBlockList !== oldPage.blocks
       || normalizeUiLanguage(state.uiLanguage) !== normalizeUiLanguage(restoredState.uiLanguage)) return null;
   const listDescriptors = Object.getOwnPropertyDescriptors(oldPage.blocks);
-  if (!Object.isExtensible(oldPage.blocks) || Object.getOwnPropertySymbols(oldPage.blocks).length
+  if (Object.getPrototypeOf(oldPage.blocks) !== Array.prototype
+      || !Object.isExtensible(oldPage.blocks) || Object.getOwnPropertySymbols(oldPage.blocks).length
       || Object.keys(listDescriptors).length !== oldPage.blocks.length + 1
       || !listDescriptors.length?.writable
       || Object.entries(listDescriptors).some(([key, descriptor]) => key !== 'length' && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= oldPage.blocks.length || !descriptor.writable || !descriptor.configurable))) return null;
