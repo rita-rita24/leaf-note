@@ -9003,6 +9003,7 @@ function buildGutter(block, parentList) {
 
 function attachDropHandlers(el, block) {
   el.addEventListener('dragover', (ev) => {
+    if (ev.target.closest('.block') !== el) return;
     if (_dataTransferHasFiles(ev.dataTransfer)) {
       ev.preventDefault();
       ev.dataTransfer.dropEffect = 'copy';
@@ -9017,6 +9018,9 @@ function attachDropHandlers(el, block) {
   });
   el.addEventListener('dragleave', () => el.classList.remove('drop-above', 'drop-below'));
   el.addEventListener('drop', (ev) => {
+    // Only the nearest block handles a nested drop, including file insertion.
+    if (ev.target.closest('.block') !== el) return;
+    ev.stopPropagation();
     const imageFile = _getImageFileFromDataTransfer(ev.dataTransfer);
     if (imageFile) {
       ev.preventDefault();
@@ -13029,6 +13033,30 @@ else SIDEBAR_DRAWER_QUERY.addListener(syncSidebarViewportMode);
 syncSidebarViewportMode();
 
 /* ==================== Sidebar resize ==================== */
+// Keep only the latest visual value; finish flushes it before persistence.
+function createLatestFrameUpdate(apply) {
+  let frame = null, pending = false, latest;
+  const cancelFrame = () => {
+    if (frame !== null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);
+    frame = null;
+  };
+  const flush = () => {
+    cancelFrame();
+    if (!pending) return;
+    pending = false;
+    apply(latest);
+  };
+  return {
+    queue(value) {
+      latest = value;
+      pending = true;
+      if (typeof requestAnimationFrame !== 'function') { flush(); return; }
+      if (frame === null) frame = requestAnimationFrame(() => { frame = null; flush(); });
+    },
+    flush,
+    cancel() { cancelFrame(); pending = false; }
+  };
+}
 const SIDEBAR_WIDTH_KEY = 'leafnote_sidebar_width';
 const SIDEBAR_MIN = 180, SIDEBAR_MAX = 480, SIDEBAR_DEFAULT = 260;
 function applySidebarWidth(px) {
@@ -13053,23 +13081,29 @@ loadSidebarWidth();
   const sidebar = $('#sidebar');
   if (!resizer || !sidebar) return;
   let startX = 0, startW = 0, dragging = false;
+  const widthUpdate = createLatestFrameUpdate(width => applySidebarWidth(width));
   const onMove = (e) => {
     if (!dragging) return;
     const dx = e.clientX - startX;
-    applySidebarWidth(startW + dx);
+    widthUpdate.queue(startW + dx);
   };
   const onUp = () => {
     if (!dragging) return;
     dragging = false;
+    widthUpdate.flush();
     sidebar.classList.remove('resizing');
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
+    window.removeEventListener('blur', onUp);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     const w = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width'), 10);
     if (Number.isFinite(w)) _safeLocalStorageSet(SIDEBAR_WIDTH_KEY, String(w));
   };
+  const onVisibilityChange = () => { if (document.hidden) onUp(); };
   resizer.addEventListener('mousedown', (e) => {
     if (SIDEBAR_DRAWER_QUERY.matches) return;
     if (sidebar.classList.contains('collapsed')) return;
+    if (dragging) onUp();
     e.preventDefault();
     dragging = true;
     startX = e.clientX;
@@ -13077,8 +13111,11 @@ loadSidebarWidth();
     sidebar.classList.add('resizing');
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    window.addEventListener('blur', onUp);
+    document.addEventListener('visibilitychange', onVisibilityChange);
   });
   resizer.addEventListener('dblclick', () => {
+    widthUpdate.cancel();
     applySidebarWidth(SIDEBAR_DEFAULT);
     _safeLocalStorageSet(SIDEBAR_WIDTH_KEY, String(SIDEBAR_DEFAULT));
   });

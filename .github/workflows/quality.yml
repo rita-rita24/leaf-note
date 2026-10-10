@@ -22,6 +22,8 @@ jobs:
       - run: node tests/storage-mirror-regressions.mjs LeafNote.html
       - run: node tests/history-focused-regressions.mjs LeafNote.html
       - run: node tests/history-reuse-regressions.mjs LeafNote.html
+      - run: node tests/sidebar-resize-regressions.mjs LeafNote.html
+      - run: node tests/block-drag-regressions.mjs LeafNote.html
       - run: node tests/checkbox-keyboard-regressions.mjs LeafNote.html
       - run: node tests/browser-ime-regressions.mjs LeafNote.html
       - run: npm run test:modernization
@@ -47,8 +49,12 @@ jobs:
       - run: node tests/history-focused-regressions.mjs LeafNote.html firefox
       - run: node tests/history-focused-regressions.mjs LeafNote.html webkit
       - run: node tests/history-reuse-regressions.mjs LeafNote.html firefox
+      - run: node tests/sidebar-resize-regressions.mjs LeafNote.html firefox
+      - run: node tests/block-drag-regressions.mjs LeafNote.html firefox
       - run: node tests/checkbox-keyboard-regressions.mjs LeafNote.html firefox
       - run: node tests/history-reuse-regressions.mjs LeafNote.html webkit
+      - run: node tests/sidebar-resize-regressions.mjs LeafNote.html webkit
+      - run: node tests/block-drag-regressions.mjs LeafNote.html webkit
       - run: node tests/checkbox-keyboard-regressions.mjs LeafNote.html webkit
       - run: node tests/run-cross-browser.mjs firefox
       - run: node tests/run-cross-browser.mjs webkit
