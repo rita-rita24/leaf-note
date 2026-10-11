@@ -10985,7 +10985,14 @@ const integrationTests = [
             const input = document.querySelector("#dialog-box .dialog-input");
             input.value = "Unsafe/Export:Name";
             document.querySelector("#dialog-box [data-ok]").click();
-            await delay(120);
+            const exportDeadline = performance.now() + 10000;
+            while (!created.length || !clicks.length || !revoked.length) {
+              if (performance.now() >= exportDeadline)
+                throw new Error(
+                  "HTML export did not finish downloading and releasing its URL",
+                );
+              await delay(10);
+            }
             const html = await created[0].blob.text();
             const match =
               /<script id="embedded-state" type="application\/json">([\s\S]*?)<\/script>/.exec(

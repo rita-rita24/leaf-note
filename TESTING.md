@@ -112,7 +112,7 @@ integration test では次の範囲を優先する。
 
 ## 2026-10-10 source standards and regression gates
 
-Edit `src/LeafNote.html.in` and rebuild; do not patch generated `LeafNote.html` or the JSON payload in `index.html`. Runtime HTML stays portable and offline. Development requires Node.js 22.13+ (22.x) or 24+ because ESLint 10 requires these versions. CI checks maintained Node 22, LTS 24 and current 26. This does not change browser requirements.
+Edit `src/LeafNote.html.in` and rebuild; do not patch generated `LeafNote.html` or the JSON payload in `index.html`. Runtime HTML stays portable and offline. Development requires Node.js 22.13+ (22.x) or 24+ because ESLint 10 requires these versions. The former CI checked Node 22, 24 and 26; GitHub Actions is now disabled and verification is run locally. This does not change browser requirements.
 
 Run `npm ci`, `npm run build`, `npm test`, `npm run test:modernization`, and `node tests/check-drag-performance.mjs LeafNote.html`. `npm run check:source` parses all active HTML scripts, CSS and JavaScript using Acorn (ECMAScript 2026), parse5, PostCSS and selected ESLint correctness rules. It checks optional catch bindings and selected legacy APIs. `npm run check:format` checks all active JavaScript modules and the package manifest. No existing source file is blanket-excluded. Git metadata, installed dependency code and historical reports/release snapshots are listed exclusions. Generated application JS is parsed but must be changed through its source. JSON data scripts are parsed as JSON. Dynamically assembled test expressions are covered by browser execution; static analysis does not fully validate their interpolated output. YAML needs GitHub's workflow validator; CSS parsing is not a browser compatibility test, and HTML parsing is not a full conformance validator.
 
@@ -139,7 +139,7 @@ node tests/run-cross-browser.mjs webkit
 npm run test:leaf-note
 ```
 
-`test:leaf-note`はLeafNote、配布ページ、保存と保存権の検証を明示的に対象とする。`npm test`は従来どおりMaskingerも対象とする。作業フォルダーでは以前からMaskingerが削除されており、`npm test`全体の成功を主張しない。本番リリースのCIは3画面すべてを検証する。
+`test:leaf-note`はLeafNote、配布ページ、保存と保存権の検証を明示的に対象とする。`npm test`は従来どおりMaskingerも対象とする。作業フォルダーでは以前からMaskingerが削除されており、`npm test`全体の成功を主張しない。本番用リリースのローカルテストは3画面すべてを検証する。GitHub Actionsは無効化済みで、ワークフローを追加しない。
 
 PlaywrightのWebKitは実機Safariではない。Chrome専用のタッチエミュレーションを使う2テストは複数ブラウザランナーで未検証として出力し、Chromeの総合テストでは実行する。最低対応ブラウザ・WebViewは未指定なので別途確定が必要。アプリ自身の構文/APIの最低条件は変更しない。
 
@@ -172,3 +172,11 @@ History reuse requires finite, plain JSON data without shared object identities,
 `measure-sidebar-resize.mjs SOURCE OUTPUT` uses 60 synthetic move events in one task, and separates handler, finalization and two-frame proxies. It is not native input latency. `measure-native-resize.mjs SOURCE OUTPUT` checks 300 native CDP moves at 100/1000 blocks and ten final saved widths, with raw compositor traces. Inputs are self-paced, not fixed-frequency physical dragging, FPS or INP. Run timing measurements sequentially without other browser workloads.
 
 `block-drag-regressions.mjs SOURCE [chrome|firefox|webkit] [OUTPUT]` uses browser mouse dragTo for before/after, numbered, nested and TOC fixtures, checking model/DOM order, undo/redo, cleared markers and final forced persistence/readback. Nested drops belong to their nearest block; propagation must not move the same block again or duplicate file insertion. This is separate from direct API move tests and does not measure physical pointer/touch latency. Raw event trust flags are recorded.
+
+### Search result navigation and manual release
+
+`node tests/search-navigation-regressions.mjs SOURCE [chrome|firefox|webkit] [OUTPUT]` checks wraparound, repeated hover, the selected DOM/index invariant, IME composition, Enter to open/create and Escape. Five trials use 600 synthetic keys and 600 synthetic hover events each. Instrumented class removals and handler CPU are separate from native input latency. Search retains its existing 50-result limit, query debounce and composition rules. Selection changes update only the old and new candidates; hovering the already-selected candidate does not rewrite its class.
+
+`node tests/measure-native-search.mjs SOURCE OUTPUT` measures 500 trusted Chrome DevTools ArrowDown key events across five trials at CPU throttling rate 4 and 1280×800. Each key is followed by two animation frames. Handler CPU samples and protocol/frame-paced total duration are recorded separately; neither is INP, physical FPS or proof of displayed pixels. Run before/after timing measurements sequentially.
+
+GitHub Actions stays disabled. There are no repository workflows; do not restore the old quality workflow. Existing GitHub Pages content stays online, but its branch-triggered publication was stopped. GitHub Pages deployments internally require Actions even when using branch publication. Until a separate manual deployment destination is specified, a commit or release ZIP is not a production deployment, and local after-results must not be reported as production after-results. The static release contains `index.html`, `LeafNote.html`, `Maskinger.html`, `.nojekyll` and `LICENSE`. Migrating hosting also changes the origin of IndexedDB/localStorage; provide an explicit export/import migration route before directing existing users to a new origin.

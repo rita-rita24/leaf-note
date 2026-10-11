@@ -14139,6 +14139,17 @@ function collectSearchMatches(q, pages) {
   return { pageMatches, limited, scannedPages, scannedBlocks: SEARCH_MAX_SCANNED_BLOCKS - remainingBlockBudget };
 }
 
+function selectSearchItem(index, scroll = false) {
+  if (!searchItems.length) return;
+  const nextIndex = (index + searchItems.length) % searchItems.length;
+  if (nextIndex !== searchSelectedIdx) {
+    searchItems[searchSelectedIdx]?.classList.remove('selected');
+    searchSelectedIdx = nextIndex;
+    searchItems[nextIndex].classList.add('selected');
+  }
+  if (scroll) searchItems[nextIndex].scrollIntoView({ block: 'nearest' });
+}
+
 function renderSearchResults(q) {
   if (_searchRenderTimer) {
     clearTimeout(_searchRenderTimer);
@@ -14183,7 +14194,8 @@ function renderSearchResults(q) {
     body.appendChild(title); body.appendChild(path);
     item.appendChild(icon); item.appendChild(body);
     item.onclick = () => { closeSearchModal(); switchPage(p.id); };
-    item.onmouseenter = () => { searchItems.forEach(i => i.classList.remove('selected')); item.classList.add('selected'); searchSelectedIdx = searchItems.indexOf(item); };
+    const searchIndex = searchItems.length;
+    item.onmouseenter = () => selectSearchItem(searchIndex);
     searchResults.appendChild(item);
     searchItems.push(item);
   });
@@ -14193,7 +14205,8 @@ function renderSearchResults(q) {
     createItem.setAttribute('aria-label', t('search.createAria', { query: q }));
     createItem.innerHTML = `<div class="search-item-icon"><span class="material-symbols-outlined" aria-hidden="true">add</span></div><div class="search-item-body"><div class="search-item-title">${escapeHTML(t('search.createTitle', { query: q }))}</div></div>`;
     createItem.onclick = () => { closeSearchModal(); const p = createPage(null, { title: q }); if (p) switchPage(p.id); };
-    createItem.onmouseenter = () => { searchItems.forEach(i => i.classList.remove('selected')); createItem.classList.add('selected'); searchSelectedIdx = searchItems.indexOf(createItem); };
+    const searchIndex = searchItems.length;
+    createItem.onmouseenter = () => selectSearchItem(searchIndex);
     searchResults.appendChild(createItem);
     searchItems.push(createItem);
   }
@@ -14247,8 +14260,8 @@ searchInput.addEventListener('keydown', (e) => {
   if (_searchComposing || isIMEComposingEvent(e)) return;
   if (_searchRenderTimer && ['Enter', 'ArrowDown', 'ArrowUp'].includes(e.key)) renderSearchResults(searchInput.value);
   if (e.key === 'Escape') { e.preventDefault(); closeSearchModal(); return; }
-  if (e.key === 'ArrowDown') { e.preventDefault(); if (searchItems.length) { searchItems.forEach(i => i.classList.remove('selected')); searchSelectedIdx = (searchSelectedIdx + 1) % searchItems.length; searchItems[searchSelectedIdx].classList.add('selected'); searchItems[searchSelectedIdx].scrollIntoView({block: 'nearest'}); } return; }
-  if (e.key === 'ArrowUp')   { e.preventDefault(); if (searchItems.length) { searchItems.forEach(i => i.classList.remove('selected')); searchSelectedIdx = (searchSelectedIdx - 1 + searchItems.length) % searchItems.length; searchItems[searchSelectedIdx].classList.add('selected'); searchItems[searchSelectedIdx].scrollIntoView({block: 'nearest'}); } return; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); selectSearchItem(searchSelectedIdx + 1, true); return; }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); selectSearchItem(searchSelectedIdx - 1, true); return; }
   if (e.key === 'Enter') { e.preventDefault(); if (searchItems[searchSelectedIdx]) searchItems[searchSelectedIdx].click(); return; }
 });
 
