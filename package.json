@@ -7,13 +7,25 @@
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
-    "build": "node scripts/build-app.mjs && node scripts/sync-distribution.mjs",
-    "check:distribution": "node scripts/build-app.mjs --check && node scripts/sync-distribution.mjs --check",
+    "build": "node scripts/sync-distribution.mjs",
+    "check:distribution": "node scripts/sync-distribution.mjs --check",
     "pretest": "npm run check",
     "test": "node tests/run-browser.mjs all",
     "test:unit": "node tests/run-browser.mjs unit",
     "test:integration": "node tests/run-browser.mjs integration",
+    "pretest:ui": "npm run check:distribution",
+    "test:ui": "node tests/run-modern-ui.mjs",
+    "test:storage": "node tests/run-browser.mjs storage",
+    "pretest:quality": "npm run check:distribution",
+    "test:quality": "node tests/run-browser.mjs quality",
+    "pretest:large-storage": "npm run check:distribution",
+    "test:large-storage": "node tests/run-large-storage.mjs",
+    "test:file-recovery": "node tests/run-file-recovery.mjs",
     "test:coverage": "node tests/run-browser.mjs coverage",
+    "pretest:soak": "npm run check:distribution",
+    "test:soak": "node tests/run-soak.mjs",
+    "pretest:usability": "npm run check:distribution",
+    "test:usability": "node tests/run-usability.mjs",
     "check:source": "node scripts/check-source.mjs",
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\" package.json",
     "check:format": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\" package.json",
@@ -31,7 +43,6 @@
     "playwright": "1.64.0",
     "postcss": "8.5.29",
     "prettier": "3.9.9",
-    "terser": "5.51.2",
     "yaml": "2.9.1"
   }
 }

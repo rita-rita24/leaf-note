@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { APP_PATH } from "../scripts/app-path.mjs";
 import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import {
@@ -9,7 +10,7 @@ import {
   evaluate,
   waitForReady,
 } from "./loading-cdp.mjs";
-const [source = "LeafNote.html", output] = process.argv.slice(2);
+const [source = APP_PATH, output] = process.argv.slice(2);
 const browser = await launchBrowser();
 let client;
 const trials = [];

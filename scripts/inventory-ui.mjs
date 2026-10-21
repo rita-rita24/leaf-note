@@ -9,11 +9,7 @@ const app = existsSync("src/LeafNote.html.in")
   : existsSync("leaf-note.html")
     ? "leaf-note.html"
     : "LeafNote.html";
-const files = [
-  app,
-  "index.html",
-  ...(existsSync("Maskinger.html") ? ["Maskinger.html"] : []),
-];
+const files = [app, "index.html"];
 const background = [];
 const registrations = [],
   controls = [],

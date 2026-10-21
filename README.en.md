@@ -12,19 +12,21 @@ Rather than flashy sync features or account integrations, LeafNote focuses on be
 
 ## Get started and keep a backup
 
-1. Select **Download LeafNote.html** on the [download page](./index.html), or open `LeafNote.html` from this repository.
-2. Open the file in a desktop browser and select **New note** to start writing. Choose your UI language in **Settings**.
-3. Use **Save** in the sidebar to download an HTML file containing your notes. Open that file in a browser to load the embedded notes.
+1. Select **Download LeafNote.html** on the [download page](./index.html), or open [leaf-note.html](./leaf-note.html) from this repository.
+2. Open the file in a desktop browser. The app starts in Japanese; choose **English** in **設定 (Settings)** to use the English labels below, then select **New note** to start writing.
+3. Use **HTML backup** in the sidebar to download an HTML file containing your notes. Open that file in a browser to load the embedded notes.
 
 Autosave stores your work in the current browser. It does not update the original HTML file or sync to another device. Clearing browser data or closing a private session can remove that saved data, so keep HTML backups of important work.
 
-If a save conflict is reported, use **Save** to download this tab's contents as HTML before reloading. Changes from other tabs or documents are not merged automatically.
+In browsers that support Web Locks, only the tab that first acquires ownership can write to the same save location. If a save conflict is reported, use **HTML backup** to download this tab's contents as HTML. To transfer ownership, close the original tab and reload the other tab. Changes from other tabs or documents are not merged automatically.
 
-Use **Import Markdown** in the sidebar to add existing notes. **Help & shortcuts** provides access to import, export, and editing actions.
+Use **Move note…** in the note menu to move a note with its descendants. **Move up** and **Move down** change sibling order. Use Tab / Shift+Tab to indent or outdent list items, and `> ` to start a quote. Switching notes retains the reading position, and body search results jump to matching blocks. Cmd/Ctrl+S opens the HTML backup dialog.
+
+Use **Import Markdown** in the sidebar to add existing notes. **Help** provides access to import, export, and editing actions.
 
 ## Choose your UI language
 
-LeafNote uses English as the default UI language, and the settings modal lets you choose English or 日本語.
+LeafNote uses Japanese as the default UI language, and the settings modal lets you choose 日本語 or English. Previously saved language choices are preserved.
 Your choice is saved in IndexedDB, so the same language is restored the next time you open it.
 The untouched welcome note also follows the selected UI language and switches between English and Japanese.
 

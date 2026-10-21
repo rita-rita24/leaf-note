@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import {
   launchBrowser,
   stopBrowser,
@@ -10,7 +11,15 @@ import {
 } from "./loading-cdp.mjs";
 
 const source =
-  process.argv[2] || new URL("../LeafNote.html", import.meta.url).pathname;
+  process.argv[2] ||
+  fileURLToPath(
+    new URL(
+      existsSync(new URL("../leaf-note.html", import.meta.url))
+        ? "../leaf-note.html"
+        : "../LeafNote.html",
+      import.meta.url,
+    ),
+  );
 const browser = await launchBrowser();
 let client;
 try {

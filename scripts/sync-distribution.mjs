@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { APP_PATH } from "./app-path.mjs";
 
-const appPath = fileURLToPath(new URL("../LeafNote.html", import.meta.url));
+const appPath = APP_PATH;
 const indexPath = fileURLToPath(new URL("../index.html", import.meta.url));
 
 function findSourceRange(indexSource) {
   const sources = [];
-  // Consume complete script elements so tag-like text inside JavaScript is not
-  // mistaken for another source element. Comments are skipped for the same reason.
+  // script要素を閉じタグまで読み取り、JavaScript内のタグに似た文字列を
+  // 別のソース要素と誤認しないようにする。同じ理由でコメントも読み飛ばす。
   const scripts = /<!--[\s\S]*?-->|<script\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
   const closingScript = /<\/script\s*>/gi;
   let match;
@@ -52,8 +53,8 @@ function findSourceRange(indexSource) {
 }
 
 function readEmbeddedSource(payload) {
-  // Escaping every '<' also prevents a source file's closing script tags from
-  // terminating this JSON data element early in the HTML parser.
+  // すべての「<」をエスケープし、ソース内のscript閉じタグが
+  // HTML解析時にこのJSONデータ要素を途中で閉じるのを防ぐ。
   if (payload.includes("<")) {
     throw new Error(
       '#leafnote-source contains a literal "<"; it must be escaped as \\u003c.',
@@ -81,26 +82,26 @@ async function main() {
     readFile(appPath, "utf8"),
     readFile(indexPath, "utf8"),
   ]);
-  if (!appSource.trim()) throw new Error("LeafNote.html is empty.");
+  if (!appSource.trim()) throw new Error("leaf-note.html is empty.");
   const source = findSourceRange(indexSource);
   const embeddedSource = readEmbeddedSource(source.payload);
   if (checkOnly) {
     if (embeddedSource !== appSource) {
       throw new Error(
-        "index.html contains an outdated LeafNote.html. Run npm run build, then review both files.",
+        "index.html contains an outdated leaf-note.html. Run npm run build, then review both files.",
       );
     }
     console.log(
-      "Distribution check passed: index.html embeds the current LeafNote.html.",
+      "Distribution check passed: index.html embeds the current leaf-note.html.",
     );
     return;
   }
-  const payload = JSON.stringify(appSource).replace(/</g, "\\u003c");
+  const payload = JSON.stringify(appSource).replaceAll("<", "\\u003c");
   const updated =
     indexSource.slice(0, source.start) +
     payload +
     indexSource.slice(source.end);
-  // Validate the exact output before writing. Only the JSON payload is replaced.
+  // 書き込み前に出力内容そのものを検証する。置換するのはJSONデータ部分だけ。
   const updatedSource = findSourceRange(updated);
   if (readEmbeddedSource(updatedSource.payload) !== appSource) {
     throw new Error(
@@ -112,7 +113,7 @@ async function main() {
     return;
   }
   await writeFile(indexPath, updated, "utf8");
-  console.log("Synchronized LeafNote.html into index.html.");
+  console.log("Synchronized leaf-note.html into index.html.");
 }
 
 main().catch((error) => {

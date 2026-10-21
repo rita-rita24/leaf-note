@@ -6,8 +6,6 @@ import { firefox, webkit } from "playwright";
 import {
   unitTests,
   integrationTests,
-  maskingerUnitTests,
-  maskingerIntegrationTests,
   indexIntegrationTests,
   runTestGroup,
 } from "./run-browser.mjs";
@@ -17,7 +15,6 @@ if (!type) throw new Error("Supported engines: firefox, webkit");
 const app = existsSync("leaf-note.html") ? "leaf-note.html" : "LeafNote.html";
 const routes = new Map([
   ["/LeafNote.html", app],
-  ["/Maskinger.html", "Maskinger.html"],
   ["/index.html", "index.html"],
 ]);
 const server = http.createServer(async (req, res) => {
@@ -48,11 +45,6 @@ try {
       "LeafNote.html",
       [...unitTests, ...integrationTests],
       () => window.__LeafNoteTest?.isReady(),
-    ],
-    [
-      "Maskinger.html",
-      [...maskingerUnitTests, ...maskingerIntegrationTests],
-      () => !!window.__MaskingerTest,
     ],
     [
       "index.html",

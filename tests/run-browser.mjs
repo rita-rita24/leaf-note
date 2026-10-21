@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { APP_FILE_NAME, APP_PATH } from "../scripts/app-path.mjs";
 import {
   launchBrowser,
   stopBrowser,
@@ -14,25 +14,29 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createQualityTests } from "./quality-regressions.mjs";
+import { runStorageWriterRegressions } from "./storage-writer-regressions.mjs";
 
 const mode = process.argv[2] || "all";
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-const appPath = path.join(
-  repoRoot,
-  existsSync(path.join(repoRoot, "leaf-note.html"))
-    ? "leaf-note.html"
-    : "LeafNote.html",
-);
+const appPath = APP_PATH;
 const appUrl = `${pathToFileURL(appPath).href}?test=1`;
-const maskingerPath = path.join(repoRoot, "Maskinger.html");
-const maskingerUrl = `${pathToFileURL(maskingerPath).href}?test=1`;
 const indexPath = path.join(repoRoot, "index.html");
 const indexUrl = `${pathToFileURL(indexPath).href}?test=1`;
 
-const validModes = new Set(["all", "unit", "integration", "coverage", "index"]);
+const validModes = new Set([
+  "all",
+  "leaf-note",
+  "unit",
+  "integration",
+  "coverage",
+  "storage",
+  "storage-writer",
+  "quality",
+]);
 
 async function openPage(
   port,
@@ -72,7 +76,305 @@ function jsWithArgs(fn, ...args) {
   return `(${fn.toString()})(${args.map((arg) => JSON.stringify(arg)).join(",")})`;
 }
 
+const localImageUrlCases = {
+  blocked: [
+    "http://local/image.png",
+    "http://printer.local/image.png",
+    "https://PRINTER.LOCAL.:8443/image.png",
+    "http://camera.floor.local/image.png",
+    "http://printer%2Elocal/image.png",
+    "http://printer\u3002local/image.png",
+    "http://home.arpa/image.png",
+    "http://router.home.arpa/image.png",
+    "https://ROUTER.HOME.ARPA./image.png",
+    "http://camera.floor.home.arpa/image.png",
+    "http://printer/image.png",
+    "http://PRINTER./image.png",
+    "http://localhost./image.png",
+    "http://camera.localhost./image.png",
+    "http://printer.local../image.png",
+    "http://router..home.arpa/image.png",
+    "http://example.com@printer.local/image.png",
+  ],
+  allowed: [
+    "https://example.com/image.png",
+    "https://EXAMPLE.COM./image.png",
+    "https://local.example.com/image.png",
+    "https://home.arpa.example.com/image.png",
+    "https://localhost.example.com/image.png",
+    "https://notlocal.example.com/image.png",
+    "https://nothome.arpa/image.png",
+    "https://example.locality/image.png",
+    "https://example.com/image.png?source=printer.local",
+    "http://8.8.8.8/image.png",
+    "http://[2606:4700:4700::1111]/image.png",
+    "http://[::ffff:808:808]/image.png",
+  ],
+};
+
+// Cover every /16 inside fe80::/10, plus spelling and numeric boundaries.
+const ipv6ImageUrlCases = {
+  blocked: [
+    ...Array.from(
+      { length: 64 },
+      (_, i) => `http://[${(0xfe80 + i).toString(16)}::1]/image.png`,
+    ),
+    "http://[fe80::]/image.png",
+    "https://[FEBF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:8443/image.png",
+    "http://[FE90:0000:0000:0000:0000:0000:0000:0001]/image.png",
+    "http://[fc00::]/image.png",
+    "http://[fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/image.png",
+    "http://[::]/image.png",
+    "http://[::1]/image.png",
+    "http://[::ffff:7f00:1]/image.png",
+  ],
+  allowed: [
+    "http://[fe7f:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/image.png",
+    "http://[fec0::]/image.png",
+    "http://[fbff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/image.png",
+    "http://[fe00::]/image.png",
+    "https://[2606:4700:4700::1111]/image.png",
+    "http://[::ffff:808:808]/image.png",
+  ],
+};
+
 const unitTests = [
+  {
+    name: "IPv6 image policy rejects the full link-local range in state display and input",
+    run: async (page) => {
+      const cases = ipv6ImageUrlCases;
+      const result = await evaluate(
+        page,
+        jsWithArgs((cases) => {
+          const api = window.__LeafNoteTest;
+          const urls = [...cases.blocked, ...cases.allowed];
+          const draft = api.createInitialState();
+          draft.pages[draft.currentPageId].blocks = urls.map((url) =>
+            api.blk("image", "", { url }),
+          );
+          const normalized = normalizeStateShape(draft).state;
+          return {
+            private: urls.map(isPrivateNetworkUrl),
+            normalized: urls.map((url) => normalizeImageUrl(url)),
+            stored: normalized.pages[normalized.currentPageId].blocks.map(
+              (block) => block.url,
+            ),
+          };
+        }, cases),
+      );
+      const expected = [...cases.blocked.map(() => ""), ...cases.allowed];
+      assert.deepEqual(result.private, [
+        ...cases.blocked.map(() => true),
+        ...cases.allowed.map(() => false),
+      ]);
+      assert.deepEqual(result.normalized, expected);
+      assert.deepEqual(result.stored, expected);
+      // Even a regressed renderer must never send these synthetic requests.
+      await page.send("Network.enable");
+      await page.send("Network.setBlockedURLs", { urls: ["*"] });
+      try {
+        const ui = await evaluate(
+          page,
+          jsWithArgs(async (urls) => {
+            const api = window.__LeafNoteTest;
+            const draft = api.createInitialState();
+            api.setState(draft);
+            const current = api.getState().pages[api.getState().currentPageId];
+            // Bypass normalization to verify the final rendering guard too.
+            current.blocks = urls.map((url) => api.blk("image", "", { url }));
+            api.renderAll();
+            const imageCount =
+              document.querySelectorAll(".image-wrap img").length;
+            const block = current.blocks[0];
+            block.url = "data:image/png;base64,AAAA";
+            const previous = block.url;
+            const attempts = [];
+            for (const url of urls.slice(0, 3)) {
+              const pending = applyImageUrlInput(block, url);
+              const alerted = !dialogOverlay.hidden;
+              if (alerted) hideDialog(true);
+              attempts.push({
+                accepted: await pending,
+                alerted,
+                preserved: block.url === previous,
+              });
+            }
+            return { imageCount, attempts };
+          }, cases.blocked),
+        );
+        assert.equal(ui.imageCount, 0);
+        assert.deepEqual(
+          ui.attempts,
+          Array.from({ length: 3 }, () => ({
+            accepted: false,
+            alerted: true,
+            preserved: true,
+          })),
+        );
+      } finally {
+        await page.send("Network.setBlockedURLs", { urls: [] });
+      }
+    },
+  },
+
+  {
+    name: "storage startup ignores malformed newer copies and bounds stalled database opens",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const draft = api.createInitialState();
+          draft.workspaceName = "healthy stored document";
+          api.setState(draft);
+          await api._doSave({ force: true });
+          const validLocal = localStorage.getItem(STATE_STORAGE_KEY);
+          const malformed = [];
+          for (const value of [
+            42,
+            [],
+            { pages: null },
+            { pages: [] },
+            { pages: {} },
+          ]) {
+            localStorage.setItem(
+              STATE_STORAGE_KEY,
+              JSON.stringify(
+                typeof value === "object" && !Array.isArray(value)
+                  ? { ...value, lastModifiedAt: Number.MAX_SAFE_INTEGER }
+                  : value,
+              ),
+            );
+            malformed.push((await api.loadStateAsync())?.workspaceName);
+          }
+          localStorage.setItem(STATE_STORAGE_KEY, validLocal);
+          const originalOpen = indexedDB.open;
+          const originalTimeout = window.setTimeout;
+          const requests = [];
+          let lateClosed = 0;
+          try {
+            indexedDB.open = () => {
+              const request = {};
+              requests.push(request);
+              return request;
+            };
+            window.setTimeout = (fn, ms, ...args) =>
+              originalTimeout(fn, ms === DB_OPEN_TIMEOUT_MS ? 10 : ms, ...args);
+            const fallback = await api.loadStateAsync();
+            const request = requests.shift();
+            request.result = {
+              close() {
+                lateClosed++;
+              },
+            };
+            request.onsuccess();
+            return { malformed, fallback: fallback.workspaceName, lateClosed };
+          } finally {
+            indexedDB.open = originalOpen;
+            window.setTimeout = originalTimeout;
+          }
+        }),
+      );
+      assert.deepEqual(
+        result.malformed,
+        Array(5).fill("healthy stored document"),
+      );
+      assert.equal(result.fallback, "healthy stored document");
+      assert.equal(result.lateClosed, 1);
+    },
+  },
+  {
+    name: "durable transactions request disk durability and only fall back for unsupported options",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(() => {
+          const calls = [];
+          const returned = _openDurableStateTransaction({
+            transaction(...args) {
+              calls.push(args);
+              if (args.length === 3) throw new TypeError("unsupported options");
+              return "legacy transaction";
+            },
+          });
+          let quotaCalls = 0;
+          let quota = "";
+          try {
+            _openDurableStateTransaction({
+              transaction() {
+                quotaCalls++;
+                throw new DOMException("full", "QuotaExceededError");
+              },
+            });
+          } catch (error) {
+            quota = error.name;
+          }
+          return { calls, returned, quotaCalls, quota };
+        }),
+      );
+      assert.deepEqual(result.calls, [
+        ["state", "readwrite", { durability: "strict" }],
+        ["state", "readwrite"],
+      ]);
+      assert.equal(result.returned, "legacy transaction");
+      assert.equal(result.quotaCalls, 1);
+      assert.equal(result.quota, "QuotaExceededError");
+    },
+  },
+  {
+    name: "QA regression: omitted import byte and paste line counts enforce actual payload limits",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const max = api.internals.MARKDOWN_IMPORT_MAX_BYTES;
+          const boundary =
+            "あ".repeat(Math.floor(max / 3)) + "x".repeat(max % 3);
+          const originalAlert = showAlert;
+          const alerts = [];
+          showAlert = async (message) => {
+            alerts.push(message);
+          };
+          try {
+            // 不正なUTF-8バイトは復号時に3バイトの置換文字へ展開される。
+            // そのため、元のFileが上限内でもテキスト化すると上限を超える場合がある。
+            const file = new File(
+              [new Uint8Array(Math.floor(max / 3) + 1).fill(255)],
+              "invalid.md",
+            );
+            return {
+              below: api.internals._markdownImportTextLimitViolation(
+                boundary.slice(0, -1),
+              ),
+              exact: api.internals._markdownImportTextLimitViolation(boundary),
+              over: api.internals._markdownImportTextLimitViolation(
+                boundary + "x",
+              )?.key,
+              imported: (await readMarkdownImportFile(file)) === null,
+              pasteExact:
+                await api.internals._confirmClipboardPasteWithinLimits({
+                  text: "\n".repeat(CLIPBOARD_PASTE_MAX_LINES - 1),
+                }),
+              pasteOver: await api.internals._confirmClipboardPasteWithinLimits(
+                { text: "\n".repeat(CLIPBOARD_PASTE_MAX_LINES) },
+              ),
+              alerts: alerts.length,
+            };
+          } finally {
+            showAlert = originalAlert;
+          }
+        }),
+      );
+      assert.equal(result.below, null);
+      assert.equal(result.exact, null);
+      assert.equal(result.over, "dialog.markdownImportTooLarge");
+      assert.equal(result.imported, true);
+      assert.equal(result.pasteExact, true);
+      assert.equal(result.pasteOver, false);
+      assert.equal(result.alerts, 2);
+    },
+  },
   {
     name: "normalization preserves export revisions when the system clock moves back",
     run: async (page) => {
@@ -1408,7 +1710,7 @@ const unitTests = [
       assert.equal(result.currentPageId, "root");
       assert.deepEqual(result.rootPages, ["root"]);
       assert.equal(result.childParent, "root");
-      assert.equal(result.uiLanguage, "en");
+      assert.equal(result.uiLanguage, "ja");
       assert.equal(result.trashAutoPurgeDays, 90);
       assert.equal(result.trashLastAutoPurge.days, 0);
       assert.equal(result.title.includes("\u0001"), false);
@@ -1746,7 +2048,9 @@ const unitTests = [
       assert.ok(result.duplicateCount <= result.max + 1);
       assert.ok(result.duplicateMaxDepth <= result.max);
       assert.equal(result.deletedCount, result.runtimeCount);
-      assert.equal(result.restoredCount, result.runtimeCount);
+      // A malformed 600-deep legacy subtree cannot be restored intact within
+      // the supported depth. Refuse it without partially clearing trash flags.
+      assert.equal(result.restoredCount, 0);
       assert.equal(result.originalGone, true);
       assert.equal(result.currentExists, true);
     },
@@ -2366,6 +2670,53 @@ const unitTests = [
     },
   },
   {
+    name: "network image URL policy rejects local DNS names without blocking public hostname boundaries",
+    run: async (page) => {
+      const { blocked, allowed } = localImageUrlCases;
+      const urls = [...blocked, ...allowed];
+      const result = await evaluate(
+        page,
+        jsWithArgs((urls) => {
+          const api = window.__LeafNoteTest;
+          const state = api.createInitialState();
+          state.pages[state.currentPageId].blocks = urls.map((url) =>
+            api.blk("image", "", { url }),
+          );
+          api.setState(state);
+          api.renderAll();
+          return {
+            privateChecks: urls.map((url) =>
+              api.internals.isPrivateNetworkUrl(url),
+            ),
+            normalized: urls.map((url) => api.internals.normalizeImageUrl(url)),
+            stateUrls: api
+              .getState()
+              .pages[api.getState().currentPageId].blocks.map(
+                (block) => block.url,
+              ),
+            imgSrcs: Array.from(
+              document.querySelectorAll(".image-wrap img"),
+              (img) => img.getAttribute("src"),
+            ),
+          };
+        }, urls),
+      );
+      assert.deepEqual(result.privateChecks, [
+        ...blocked.map(() => true),
+        ...allowed.map(() => false),
+      ]);
+      assert.deepEqual(result.normalized, [
+        ...blocked.map(() => ""),
+        ...allowed,
+      ]);
+      assert.deepEqual(result.stateUrls, [
+        ...blocked.map(() => ""),
+        ...allowed,
+      ]);
+      assert.deepEqual(result.imgSrcs, allowed);
+    },
+  },
+  {
     name: "state normalization breaks cyclic page parent links",
     run: async (page) => {
       const result = await evaluate(
@@ -2434,6 +2785,67 @@ const unitTests = [
       assert.equal(result.childrenAligned, true);
       assert.ok(result.rootPages.length >= 1);
       assert.ok(result.renderedItems >= 1);
+    },
+  },
+  {
+    name: "startup revisions scan oversized page sets without argument expansion",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(() => {
+          const api = window.__LeafNoteTest;
+          const results = [];
+          for (const count of [999, 1000, 1001, 100000]) {
+            const pages = {};
+            for (let i = 0; i < count; i++)
+              pages["p" + i] = {
+                id: "p" + i,
+                createdAt: 1,
+                updatedAt: 1,
+                blocks: [],
+                children: [],
+              };
+            pages["p" + (count - 1)].deletedAt = "9000";
+            const large = {
+              documentId: "revision-boundary",
+              pages,
+              rootPages: ["p0"],
+              currentPageId: "p0",
+              lastModifiedAt: NaN,
+              exportedAt: Infinity,
+              exportRevision: -Infinity,
+              trashLastAutoPurge: { at: "invalid" },
+            };
+            const older = {
+              ...large,
+              pages: { p0: pages.p0 },
+              lastModifiedAt: 8000,
+            };
+            const chosen = api.chooseStartupState(older, large, null);
+            const normalized = api.normalizeStateShape(chosen);
+            results.push({
+              count,
+              revision: api.getStateRevision(large),
+              selected: chosen === large,
+              retained: Object.keys(normalized.state.pages).length,
+              lossy: normalized.lossyRepair,
+            });
+          }
+          const malformed = api.getStateRevision({
+            lastModifiedAt: { valueOf: null },
+            exportedAt: "42",
+            pages: { invalid: null, valid: { updatedAt: "not-a-date" } },
+          });
+          return { results, malformed };
+        }),
+      );
+      for (const row of result.results) {
+        assert.equal(row.revision, 9000);
+        assert.equal(row.selected, true);
+        assert.equal(row.retained, Math.min(row.count, 1000));
+        assert.equal(row.lossy, row.count > 1000);
+      }
+      assert.equal(result.malformed, 42);
     },
   },
   {
@@ -2761,6 +3173,71 @@ const unitTests = [
     },
   },
   {
+    name: "flowchart chains preserve labels and end arrows at node boundaries",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(() => {
+          const render = (source) => {
+            const target = document.createElement("div");
+            window.__LeafNoteTest.internals.renderMermaidDiagramPreview(
+              target,
+              source,
+            );
+            return {
+              labels: [...target.querySelectorAll(".diagram-node-label")].map(
+                (node) => node.textContent,
+              ),
+              edgeLabels: [
+                ...target.querySelectorAll(".diagram-edge-label"),
+              ].map((node) => node.textContent),
+              arrows: [...target.querySelectorAll(".diagram-edge")].map(
+                (edge) => edge.hasAttribute("marker-end"),
+              ),
+              edges: [...target.querySelectorAll("line.diagram-edge")].map(
+                (edge) =>
+                  ["x1", "y1", "x2", "y2"].map((key) =>
+                    Number(edge.getAttribute(key)),
+                  ),
+              ),
+              nodes: [...target.querySelectorAll("rect.diagram-node")].map(
+                (node) =>
+                  ["x", "y", "width", "height"].map((key) =>
+                    Number(node.getAttribute(key)),
+                  ),
+              ),
+            };
+          };
+          return {
+            chain: render(
+              "flowchart LR\nA[Input] -->|save| B[Storage] --> C[Done]\nB --> A",
+            ),
+            separate: render(
+              "flowchart TD\nA[Input] --> B[Storage]\nB --> C[Done]",
+            ),
+            quoted: render(
+              'flowchart LR\nA["a --> b"] -.-> B["c | d"] --- C[Done]',
+            ),
+            loop: render("flowchart LR\nA[Retry] --> A"),
+          };
+        }),
+      );
+      assert.deepEqual(result.chain.labels, ["Input", "Storage", "Done"]);
+      assert.deepEqual(result.separate.labels, ["Input", "Storage", "Done"]);
+      assert.deepEqual(result.chain.edgeLabels, ["save"]);
+      assert.equal(result.chain.edges.length, 3);
+      assert.deepEqual(result.quoted.labels, ["a --> b", "c | d", "Done"]);
+      assert.deepEqual(result.quoted.arrows, [true, false]);
+      assert.deepEqual(result.loop.arrows, [true]);
+      const [source, target] = result.chain.nodes;
+      const [x1, y1, x2, y2] = result.chain.edges[0];
+      assert.equal(x1, source[0] + source[2]);
+      assert.equal(y1, source[1] + source[3] / 2);
+      assert.equal(x2, target[0]);
+      assert.equal(y2, target[1] + target[3] / 2);
+    },
+  },
+  {
     name: "mermaid previews fall back for oversized sources and excessive elements",
     run: async (page) => {
       const result = await evaluate(
@@ -2891,7 +3368,9 @@ const unitTests = [
           const api = window.__LeafNoteTest;
           const s = api.createInitialState();
           const welcome = s.pages[s.currentPageId];
-          api.internals._applyInitialWelcomePageLocale(welcome, "ja");
+          const initialLanguage = s.uiLanguage;
+          const initialWelcomeTitle = welcome.title;
+          api.internals._applyInitialWelcomePageLocale(welcome, "en");
 
           const trashRoot = api.createPage(null, { title: "Expired root" });
           const trashChild = api.createPage(trashRoot.id, {
@@ -2927,6 +3406,8 @@ const unitTests = [
           const beforeCount = Object.keys(api.getState().pages).length;
           const purged = api.autoPurgeTrash();
           return {
+            initialLanguage,
+            initialWelcomeTitle,
             welcomeTitle: welcome.title,
             welcomeIcon: welcome.icon,
             sanitizedDefinition,
@@ -2943,7 +3424,9 @@ const unitTests = [
           };
         }),
       );
-      assert.match(result.welcomeTitle, /LeafNote/);
+      assert.equal(result.initialLanguage, "ja");
+      assert.equal(result.initialWelcomeTitle, "LeafNote へようこそ");
+      assert.equal(result.welcomeTitle, "Welcome to LeafNote");
       assert.equal(result.welcomeIcon, "👋");
       assert.equal(result.sanitizedDefinition.includes("onerror"), false);
       assert.equal(result.sanitizedDefinition.includes("onclick"), false);
@@ -2994,9 +3477,7 @@ const unitTests = [
               visible,
               visibleText,
               hiddenAfterTimer: status.hidden,
-              savedFallback: !!localStorage.getItem(
-                "leafnote-markdown-native-v1",
-              ),
+              savedFallback: !!localStorage.getItem(STATE_STORAGE_KEY),
             };
           } finally {
             Object.defineProperty(indexedDB, "open", {
@@ -3044,8 +3525,8 @@ const unitTests = [
             const second = api._doSave();
             const realRequest = originalOpen.call(
               indexedDB,
-              "LeafNoteMarkdownNativeDB",
-              1,
+              DB_NAME,
+              DB_VERSION,
             );
             await new Promise((resolve, reject) => {
               realRequest.onsuccess = resolve;
@@ -3141,10 +3622,7 @@ const unitTests = [
           try {
             const localState = api.createInitialState();
             localState.workspaceName = "Local fallback";
-            localStorage.setItem(
-              "leafnote-markdown-native-v1",
-              JSON.stringify(localState),
-            );
+            localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(localState));
 
             Object.defineProperty(indexedDB, "open", {
               configurable: true,
@@ -3348,6 +3826,107 @@ const unitTests = [
       ]);
       assert.match(result.urls[8], /^data:image\/png;base64,/);
       assert.match(result.urls[9], /^data:image\/png;base64,/);
+    },
+  },
+  {
+    name: "remote image export checks local DNS and IPv6 at initial redirect and final URLs",
+    run: async (page) => {
+      const cases = {
+        blocked: [...localImageUrlCases.blocked, ...ipv6ImageUrlCases.blocked],
+        allowed: [...localImageUrlCases.allowed, ...ipv6ImageUrlCases.allowed],
+      };
+      const { blocked, allowed } = cases;
+      const results = await evaluate(
+        page,
+        jsWithArgs(async (cases) => {
+          const api = window.__LeafNoteTest;
+          const originalFetch = window.fetch;
+          const results = [];
+          const entry = "https://example.com/entry.png";
+          const hop = "https://example.com/hop.png";
+          try {
+            for (const stage of ["initial", "redirect", "final"]) {
+              for (const url of [...cases.blocked, ...cases.allowed]) {
+                const fetched = [];
+                const redirectModes = [];
+                window.fetch = async (target, options) => {
+                  fetched.push(String(target));
+                  redirectModes.push(options.redirect);
+                  if (stage === "redirect" && fetched.length <= 2) {
+                    return new Response("", {
+                      status: 302,
+                      headers: {
+                        location:
+                          fetched.length === 1 ? hop : new URL(url).href,
+                      },
+                    });
+                  }
+                  const response = new Response(
+                    new Blob(["image-bytes"], { type: "image/png" }),
+                    { status: 200 },
+                  );
+                  if (stage === "final")
+                    Object.defineProperty(response, "url", { value: url });
+                  return response;
+                };
+                const initialUrl = stage === "initial" ? url : entry;
+                const state = api.createInitialState();
+                const block = api.blk("image", "", { url: initialUrl });
+                state.pages[state.currentPageId].blocks = [block];
+                const result =
+                  await api.internals.inlineRemoteImagesForExport(state);
+                results.push({
+                  stage,
+                  url,
+                  initialUrl,
+                  fetched,
+                  redirectModes,
+                  result,
+                  savedUrl: block.url,
+                });
+              }
+            }
+            return results;
+          } finally {
+            window.fetch = originalFetch;
+          }
+        }, cases),
+      );
+      assert.equal(results.length, (blocked.length + allowed.length) * 3);
+      for (const row of results) {
+        const denied = blocked.includes(row.url);
+        const context = `${row.stage}: ${row.url}`;
+        assert.equal(row.result.converted, denied ? 0 : 1, context);
+        assert.equal(row.result.failed.length, denied ? 1 : 0, context);
+        if (denied) {
+          assert.match(
+            row.result.failed[0].reason,
+            /private or local network/,
+            context,
+          );
+          assert.equal(row.savedUrl, row.initialUrl, context);
+        } else {
+          assert.match(row.savedUrl, /^data:image\/png;base64,/, context);
+        }
+        const expectedFetches =
+          row.stage === "initial"
+            ? denied
+              ? []
+              : [new URL(row.url).href]
+            : row.stage === "redirect"
+              ? [
+                  "https://example.com/entry.png",
+                  "https://example.com/hop.png",
+                  ...(denied ? [] : [new URL(row.url).href]),
+                ]
+              : ["https://example.com/entry.png"];
+        assert.deepEqual(row.fetched, expectedFetches, context);
+        assert.deepEqual(
+          row.redirectModes,
+          expectedFetches.map(() => "manual"),
+          context,
+        );
+      }
     },
   },
   {
@@ -4036,6 +4615,7 @@ const unitTests = [
         js(async () => {
           const api = window.__LeafNoteTest;
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           s.workspaceName = "payload-exact-boundary";
           api.setState(s);
           const exactSnapshot = JSON.stringify(api.getState());
@@ -4140,7 +4720,116 @@ const unitTests = [
     },
   },
   {
-    name: "index embedded LeafNote source matches LeafNote.html",
+    name: "history byte boundaries preserve snapshots and stop at missing history",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(() => {
+          const api = window.__LeafNoteTest;
+          const max = api.internals.UNDO_MAX_SNAPSHOT_BYTES;
+          const rows = [];
+          for (const delta of [-1, 0, 1]) {
+            const draft = api.createInitialState();
+            draft.pages[draft.currentPageId].blocks = [
+              api.blk("text", "baseline"),
+            ];
+            api.setState(draft);
+            const baseline = JSON.stringify(api.getState());
+            _pushUndoStackSnapshot(baseline);
+            const current = api.getState();
+            current.workspaceName = "あ";
+            const baseBytes = new TextEncoder().encode(
+              JSON.stringify(current),
+            ).length;
+            current.workspaceName += "x".repeat(max + delta - baseBytes);
+            const before = JSON.stringify(current);
+            const beforeStacks = JSON.stringify(_historyStackInfo());
+            const changed = undo();
+            const afterUndo = JSON.stringify(api.getState());
+            const stacksUnchanged =
+              beforeStacks === JSON.stringify(_historyStackInfo());
+            const redone = redo();
+            rows.push({
+              delta,
+              bytes: new TextEncoder().encode(before).length,
+              changed,
+              redone,
+              refusedUnchanged: before === afterUndo && stacksUnchanged,
+              restoredName:
+                api.getState().workspaceName === current.workspaceName,
+            });
+          }
+          api.setState(api.createInitialState());
+          const small = JSON.stringify(api.getState());
+          _pushUndoStackSnapshot(small);
+          // 大きすぎて記録できなかった編集は履歴の空白になる。再び上限内になっても、
+          // その空白を飛び越えて古いスナップショットへ戻れるようにしてはいけない。
+          _pendingSnapshot = "x".repeat(max + 1);
+          _flushPendingUndoSnapshot();
+          const beforeGap = JSON.stringify(api.getState());
+          const gapStacks = JSON.stringify(_historyStackInfo());
+          const gapBlocked = undo() === false;
+          const gapPreserved =
+            beforeGap === JSON.stringify(api.getState()) &&
+            gapStacks === JSON.stringify(_historyStackInfo());
+          _pendingSnapshot = small;
+          api.getState().workspaceName = "new contiguous edit";
+          const resumed = undo();
+          const resumedRedo = redo();
+          const resumedName = api.getState().workspaceName;
+          api.setState(api.createInitialState());
+          _pushRedoStackSnapshot(JSON.stringify(api.getState()));
+          api.getState().workspaceName = "x".repeat(max);
+          const redoBefore = JSON.stringify(api.getState());
+          const redoStacks = JSON.stringify(_historyStackInfo());
+          const redoBlocked = redo() === false;
+          const redoPreserved =
+            redoBefore === JSON.stringify(api.getState()) &&
+            redoStacks === JSON.stringify(_historyStackInfo());
+          // 合計容量が上限ちょうどなら4件を保持し、1バイト超えたら最古の履歴を削除する。
+          // 件数とバイト数のどちらの上限も超えないことを確認する。
+          api.setState(api.createInitialState());
+          for (let i = 0; i < 4; i++)
+            _pushUndoStackSnapshot(String(i) + "x".repeat(max - 1));
+          const atTotal = _historyStackInfo();
+          _pushUndoStackSnapshot("z");
+          const overTotal = _historyStackInfo();
+          api.setState(api.createInitialState());
+          return {
+            rows,
+            max,
+            gapBlocked,
+            gapPreserved,
+            resumed,
+            resumedRedo,
+            resumedName,
+            redoBlocked,
+            redoPreserved,
+            atTotal,
+            overTotal,
+          };
+        }),
+      );
+      for (const row of result.rows) {
+        assert.equal(row.bytes, result.max + row.delta);
+        assert.equal(row.changed, row.delta <= 0);
+        assert.equal(row.redone, row.delta <= 0);
+        if (row.delta > 0) assert.equal(row.refusedUnchanged, true);
+        assert.equal(row.restoredName, true);
+      }
+      assert.equal(result.gapBlocked, true);
+      assert.equal(result.gapPreserved, true);
+      assert.equal(result.resumed, true);
+      assert.equal(result.resumedRedo, true);
+      assert.equal(result.resumedName, "new contiguous edit");
+      assert.equal(result.redoBlocked, true);
+      assert.equal(result.redoPreserved, true);
+      assert.equal(result.atTotal.undoBytes, 4 * result.max);
+      assert.equal(result.overTotal.undoBytes, 3 * result.max + 1);
+    },
+  },
+  {
+    name: "index embedded LeafNote source matches the current app",
     run: async () => {
       const [appSource, indexSource] = await Promise.all([
         readFile(appPath, "utf8"),
@@ -4175,7 +4864,7 @@ const unitTests = [
         )
           firstDiff++;
         assert.fail(
-          `index leafnote-source differs from LeafNote.html at offset ${firstDiff}; embedded=${embeddedSource.length} bytes, app=${appSource.length} bytes`,
+          `index leafnote-source differs from ${APP_FILE_NAME} at offset ${firstDiff}; embedded=${embeddedSource.length} bytes, app=${appSource.length} bytes`,
         );
       }
       const sourceEnd = indexSource.indexOf("</script>", match.index);
@@ -4185,1009 +4874,100 @@ const unitTests = [
         afterSource.includes("function parseMarkdownToBlocks"),
         false,
       );
-      assert.equal(
-        (afterSource.match(/document\.addEventListener\("click"/g) || [])
-          .length,
-        1,
-      );
-    },
-  },
-];
-
-const maskingerUnitTests = [
-  {
-    name: "Maskinger masks repeated secrets deterministically and restores with current tab mappings",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const openAiKey = "sk-" + "A".repeat(24);
-          const githubToken = "ghp_" + "B".repeat(24);
-          const jwt =
-            "eyJ" +
-            "a".repeat(10) +
-            "." +
-            "b".repeat(12) +
-            "." +
-            "c".repeat(12);
-          const input = [
-            `Authorization: Bearer ${openAiKey}`,
-            `github=${githubToken}`,
-            `jwt=${jwt}`,
-            "email: alice@example.com",
-            "url=https://secret.example.com/path?token=abc",
-            "phone: 03-1234-5678",
-            "住所: 東京都千代田区丸の内1-1-1",
-            `repeat: Bearer ${openAiKey}`,
-          ].join("\n");
-          const masked = api.mask(input);
-          const restored = api.restore(masked.text);
-          const repeated = masked.text.match(/MASK_SECRET_\d{4,}/g) || [];
-          const mappings = api.mappings();
-          return {
-            mode: masked.mode,
-            maskedText: masked.text,
-            restored,
-            mappings,
-            repeatedSecretPlaceholders: repeated,
-          };
-        }),
-      );
-      assert.equal(result.mode, "TEXT");
-      assert.equal(result.restored.text.includes("alice@example.com"), true);
-      assert.equal(
-        result.restored.text.includes("東京都千代田区丸の内1-1-1"),
-        true,
-      );
-      assert.equal(result.restored.text.includes("MASK_SECRET_"), false);
-      assert.ok(result.restored.restored >= result.mappings.length - 1);
-      assert.equal(result.restored.unresolved, 0);
-      assert.equal(result.maskedText.includes("alice@example.com"), false);
-      assert.equal(result.maskedText.includes("sk-"), false);
-      assert.equal(result.maskedText.includes("secret.example.com"), false);
-      assert.equal(result.maskedText.includes("03-1234-5678"), false);
-      assert.match(
-        result.maskedText,
-        /Authorization: Bearer MASK_SECRET_\d{4,}/,
-      );
-      assert.match(result.maskedText, /MASK_EMAIL_\d{4,}/);
-      assert.match(result.maskedText, /MASK_ADDRESS_\d{4,}/);
-      assert.ok(result.repeatedSecretPlaceholders.length >= 2);
-      assert.equal(
-        new Set(result.repeatedSecretPlaceholders).size <
-          result.repeatedSecretPlaceholders.length,
-        true,
-      );
-      assert.equal(
-        result.mappings.some((item) => /^MASK_/.test(item._original)),
-        false,
-      );
-    },
-  },
-  {
-    name: "Maskinger SQL mode masks identifiers and values while preserving SQL structure",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const sql = [
-            "SELECT users.email, orders.total",
-            "FROM billing.users",
-            "JOIN orders ON orders.user_id = users.id",
-            "WHERE users.email = 'alice@example.com' AND orders.total > 100",
-            '<if test="tenantId != null">AND tenant_id = #{tenantId}</if>',
-          ].join("\n");
-          const masked = api.mask(sql);
-          const restored = api.restore(masked.text);
-          return {
-            mode: masked.mode,
-            maskedText: masked.text,
-            restored,
-            mappings: api.mappings(),
-          };
-        }),
-      );
-      assert.equal(result.mode, "SQL");
-      assert.match(result.maskedText, /^SELECT /);
-      assert.match(result.maskedText, /\bFROM\b/);
-      assert.match(result.maskedText, /<if test="tenantId != null">/);
-      assert.equal(result.maskedText.includes("alice@example.com"), false);
-      assert.equal(result.maskedText.includes("billing.users"), false);
-      assert.match(
-        result.maskedText,
-        /MASK_SQL_(COL|TABLE|VALUE|PARAM)_\d{4,}/,
-      );
-      assert.equal(result.restored.text.includes("alice@example.com"), true);
-      assert.equal(result.restored.text.includes("billing.users"), true);
-      assert.equal(result.restored.unresolved, 0);
-      assert.ok(result.mappings.length >= 4);
-    },
-  },
-  {
-    name: "Maskinger broad sensitive corpus masks and restores without raw leakage",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const rawValues = [
-            "AKIA1234567890ABCDEF",
-            "AIza" + "D".repeat(24),
-            "xoxb-12345678901234567890",
-            "sk_live_1234567890abcdef",
-            "postgres://user:pass@db.example.com:5432/app",
-            "mongodb+srv://user:pass@cluster.example.com/app",
-            "123e4567-e89b-12d3-a456-426614174000",
-            "123-45-6789",
-            "4111 1111 1111 1111",
-            "100-0001",
-            "192.168.10.20",
-            "aa:bb:cc:dd:ee:ff",
-            "JP12ABCDEF1234567890",
-            "山田太郎",
-            "株式会社テスト",
-            "東京都千代田区丸の内1-1-1",
-          ];
-          const input = [
-            `aws=${rawValues[0]}`,
-            `api_key=${rawValues[1]}`,
-            `slack=${rawValues[2]}`,
-            `stripe=${rawValues[3]}`,
-            `database=${rawValues[4]}`,
-            `mongo=${rawValues[5]}`,
-            `uuid=${rawValues[6]}`,
-            `ssn=${rawValues[7]}`,
-            `card=${rawValues[8]}`,
-            `postal=${rawValues[9]}`,
-            `ip=${rawValues[10]}`,
-            `mac=${rawValues[11]}`,
-            `account=${rawValues[12]}`,
-            `氏名: ${rawValues[13]}`,
-            `会社名: ${rawValues[14]}`,
-            `住所: ${rawValues[15]}`,
-          ].join("\n");
-          const masked = api.mask(input);
-          const restored = api.restore(masked.text);
-          const mappings = api.mappings();
-          return {
-            mode: masked.mode,
-            maskedText: masked.text,
-            restored,
-            mappings,
-            leakedValues: rawValues.filter((value) =>
-              masked.text.includes(value),
-            ),
-            missingRestoredValues: rawValues.filter(
-              (value) => !restored.text.includes(value),
-            ),
-            placeholderOriginals: mappings.filter((item) =>
-              /^MASK_/.test(item._original),
-            ),
-          };
-        }),
-      );
-      assert.equal(result.mode, "TEXT");
-      assert.deepEqual(result.leakedValues, []);
-      assert.deepEqual(result.missingRestoredValues, []);
-      assert.deepEqual(result.placeholderOriginals, []);
-      assert.equal(result.restored.unresolved, 0);
-      assert.match(result.maskedText, /MASK_SECRET_\d{4,}/);
-      assert.match(result.maskedText, /MASK_CARD_\d{4,}/);
-      assert.match(result.maskedText, /MASK_MAC_\d{4,}/);
-      assert.match(result.maskedText, /MASK_ADDRESS_\d{4,}/);
-      assert.ok(result.mappings.length >= 12);
-    },
-  },
-  {
-    name: "Maskinger limit helpers enforce input and mapping boundaries",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const limits = api.limits();
-          const exactBytes = "a".repeat(limits.inputMaxBytes);
-          const overBytes = `${exactBytes}a`;
-          const exactLines = Array.from(
-            { length: limits.inputMaxLines },
-            () => "x",
-          ).join("\n");
-          const overLines = `${exactLines}\nx`;
-          const exactOriginal = "x".repeat(limits.mappingOriginalMaxBytes);
-          const overOriginal = `${exactOriginal}x`;
-          const exactOriginalResult = api.mask(`password=${exactOriginal}`);
-          const exactOriginalMappingCount = api.mappings().length;
-          api.clear();
-          const overOriginalResult = api.mask(`password=${overOriginal}`);
-          const overOriginalMappingCount = api.mappings().length;
-          return {
-            exactBytesViolation: api.validateInput(exactBytes),
-            overBytesViolation: api.validateInput(overBytes),
-            exactLinesViolation: api.validateInput(exactLines),
-            overLinesViolation: api.validateInput(overLines),
-            exactOriginalRejected: Boolean(exactOriginalResult.rejected),
-            exactOriginalMappingCount,
-            overOriginalRejected: Boolean(overOriginalResult.rejected),
-            overOriginalCode: overOriginalResult.violation?.code,
-            overOriginalMappingCount,
-          };
-        }),
-      );
-      assert.equal(result.exactBytesViolation, null);
-      assert.equal(result.overBytesViolation.code, "input_bytes");
-      assert.equal(result.exactLinesViolation, null);
-      assert.equal(result.overLinesViolation.code, "input_lines");
-      assert.equal(result.exactOriginalRejected, false);
-      assert.equal(result.exactOriginalMappingCount, 1);
-      assert.equal(result.overOriginalRejected, true);
-      assert.equal(result.overOriginalCode, "mapping_original_bytes");
-      assert.equal(result.overOriginalMappingCount, 0);
-    },
-  },
-];
-
-const maskingerIntegrationTests = [
-  {
-    name: "Maskinger UI persists mappings in sessionStorage and restores after reload",
-    run: async (page) => {
-      const first = await evaluate(
-        page,
-        js(() => {
-          window.__MaskingerTest.clear();
-          const secret = "sk-" + "C".repeat(24);
-          const source = document.querySelector("#source-input");
-          source.value = `token=${secret}\nemail=alice@example.com`;
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const masked = document.querySelector("#masked-output").value;
-          const mappingText =
-            document.querySelector("#mapping-body").textContent;
-          const stored = sessionStorage.getItem("maskinger.activeMappings.v2");
-          return {
-            masked,
-            mappingText,
-            storedLength: stored ? stored.length : 0,
-            mappingCount: window.__MaskingerTest.mappings().length,
-          };
-        }),
-      );
-      assert.match(first.masked, /MASK_SECRET_\d{4,}/);
-      assert.match(first.masked, /MASK_EMAIL_\d{4,}/);
-      assert.equal(first.masked.includes("alice@example.com"), false);
-      assert.equal(first.mappingText.includes("alice@example.com"), true);
-      assert.ok(first.storedLength > 20);
-      assert.equal(first.mappingCount, 2);
-
-      await page.send("Page.reload", { ignoreCache: true });
-      await waitForReady(
-        page,
-        '!!window.__MaskingerTest && !!document.querySelector("#source-input")',
-      );
-
-      const second = await evaluate(
-        page,
-        jsWithArgs((masked) => {
-          const restore = document.querySelector("#restore-input");
-          restore.value = masked;
-          restore.dispatchEvent(new Event("input", { bubbles: true }));
-          const restored = document.querySelector("#restore-output").value;
-          document.querySelector("#clear-all-btn").click();
-          return {
-            restored,
-            afterClearStored: sessionStorage.getItem(
-              "maskinger.activeMappings.v2",
-            ),
-            afterClearMasked: document.querySelector("#masked-output").value,
-            afterClearMappings: window.__MaskingerTest.mappings().length,
-          };
-        }, first.masked),
-      );
-      assert.equal(second.restored.includes("alice@example.com"), true);
-      assert.equal(second.restored.includes("token=sk-"), true);
-      assert.equal(second.restored.includes("MASK_"), false);
-      assert.equal(second.afterClearStored, null);
-      assert.equal(second.afterClearMasked, "");
-      assert.equal(second.afterClearMappings, 0);
-    },
-  },
-  {
-    name: "Maskinger rejected oversized source and restore inputs keep previous UI state",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const limits = api.limits();
-          const source = document.querySelector("#source-input");
-          const maskedOutput = document.querySelector("#masked-output");
-          const restoreInput = document.querySelector("#restore-input");
-          const restoreOutput = document.querySelector("#restore-output");
-          const toast = document.querySelector("#toast");
-
-          source.value = "email=accepted@example.com";
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const accepted = {
-            source: source.value,
-            masked: maskedOutput.value,
-            mappings: api.mappings(),
-          };
-
-          source.value = "a".repeat(limits.inputMaxBytes + 1);
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const afterByteReject = {
-            sourceLength: source.value.length,
-            source: source.value,
-            masked: maskedOutput.value,
-            mappings: api.mappings(),
-            toast: toast.textContent,
-          };
-
-          source.value = Array.from(
-            { length: limits.inputMaxLines + 1 },
-            () => "x",
-          ).join("\n");
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const afterLineReject = {
-            source: source.value,
-            masked: maskedOutput.value,
-            mappings: api.mappings(),
-            toast: toast.textContent,
-          };
-
-          restoreInput.value = "MASK_EMAIL_0001";
-          restoreInput.dispatchEvent(new Event("input", { bubbles: true }));
-          const restoreAccepted = {
-            input: restoreInput.value,
-            output: restoreOutput.value,
-          };
-
-          restoreInput.value = "b".repeat(limits.inputMaxBytes + 1);
-          restoreInput.dispatchEvent(new Event("input", { bubbles: true }));
-          const restoreRejected = {
-            input: restoreInput.value,
-            output: restoreOutput.value,
-            toast: toast.textContent,
-          };
-
-          return {
-            accepted,
-            afterByteReject,
-            afterLineReject,
-            restoreAccepted,
-            restoreRejected,
-          };
-        }),
-      );
-      assert.match(result.accepted.masked, /MASK_EMAIL_0001/);
-      assert.equal(result.accepted.mappings.length, 1);
-      assert.equal(result.afterByteReject.source, result.accepted.source);
-      assert.equal(result.afterByteReject.masked, result.accepted.masked);
-      assert.deepEqual(
-        result.afterByteReject.mappings,
-        result.accepted.mappings,
-      );
-      assert.match(result.afterByteReject.toast, /マスク前の入力/);
-      assert.equal(result.afterLineReject.source, result.accepted.source);
-      assert.equal(result.afterLineReject.masked, result.accepted.masked);
-      assert.deepEqual(
-        result.afterLineReject.mappings,
-        result.accepted.mappings,
-      );
-      assert.match(result.afterLineReject.toast, /5000行/);
-      assert.equal(result.restoreAccepted.output, "accepted@example.com");
-      assert.equal(result.restoreRejected.input, result.restoreAccepted.input);
-      assert.equal(
-        result.restoreRejected.output,
-        result.restoreAccepted.output,
-      );
-      assert.match(result.restoreRejected.toast, /復元前の入力/);
-    },
-  },
-  {
-    name: "Maskinger ignores stale placeholder mappings and restores nested legacy placeholders after reload",
-    run: async (page) => {
-      await evaluate(
-        page,
-        js(() => {
-          const legacyMappings = [
-            {
-              _placeholder: "MASK_SECRET_0001",
-              _type: "SECRET",
-              _original: "legacy-secret-value",
-            },
-            {
-              _placeholder: "MASK_SECRET_0002",
-              _type: "SECRET",
-              _original: "MASK_SECRET_0001",
-            },
-            {
-              _placeholder: "MASK_SECRET_0003",
-              _type: "SECRET",
-              _original: "duplicate-a",
-            },
-            {
-              _placeholder: "MASK_SECRET_0003",
-              _type: "SECRET",
-              _original: "duplicate-b",
-            },
-            {
-              _placeholder: "MASK_URL_0001",
-              _type: "URL",
-              _original:
-                "https://legacy.example.com/callback?token=MASK_SECRET_0001",
-            },
-            {
-              _placeholder: "MASK_EMAIL_0099",
-              _type: "EMAIL",
-              _original: "legacy@example.com",
-            },
-            {
-              _placeholder: "not-a-mask",
-              _type: "EMAIL",
-              _original: "invalid@example.com",
-            },
-          ];
-          sessionStorage.setItem(
-            "maskinger.activeMappings.v2",
-            JSON.stringify(legacyMappings),
-          );
-        }),
-      );
-      await page.send("Page.reload", { ignoreCache: true });
-      await waitForReady(
-        page,
-        '!!window.__MaskingerTest && !!document.querySelector("#source-input")',
-      );
-
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          const beforeMappings = api.mappings();
-          const restored = api.restore(
-            "url=MASK_URL_0001\nmail=MASK_EMAIL_0099",
-          ).text;
-          const maskedNew = api.mask("email=new@example.com");
-          return {
-            beforeMappings,
-            restored,
-            maskedNew: maskedNew.text,
-            afterMappings: api.mappings(),
-          };
-        }),
-      );
-      assert.equal(
-        result.restored.includes(
-          "https://legacy.example.com/callback?token=legacy-secret-value",
-        ),
-        true,
-      );
-      assert.equal(result.restored.includes("MASK_SECRET_"), false);
-      assert.equal(result.restored.includes("legacy@example.com"), true);
-      assert.equal(
-        result.beforeMappings.some((item) => /^MASK_/.test(item._original)),
-        false,
-      );
-      assert.equal(
-        result.beforeMappings.filter(
-          (item) => item._placeholder === "MASK_SECRET_0003",
-        ).length,
-        1,
-      );
-      assert.equal(
-        result.beforeMappings.some(
-          (item) => item._placeholder === "not-a-mask",
-        ),
-        false,
-      );
-      assert.match(result.maskedNew, /MASK_EMAIL_0100/);
-      assert.equal(
-        result.afterMappings.some(
-          (item) => item._original === "new@example.com",
-        ),
-        true,
-      );
-    },
-  },
-  {
-    name: "Maskinger mapping cap rejects new placeholders and caps rendered rows",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const limits = api.limits();
-          const mappings = Array.from(
-            { length: limits.maxMappings },
-            (_, index) => {
-              const number = String(index + 1).padStart(4, "0");
-              return {
-                _placeholder: `MASK_EMAIL_${number}`,
-                _type: "EMAIL",
-                _original: `user${index}@example.com`,
-              };
-            },
-          );
-          const replaceResult = api.replaceMappings(mappings);
-          const source = document.querySelector("#source-input");
-          const maskedOutput = document.querySelector("#masked-output");
-          const toast = document.querySelector("#toast");
-
-          source.value = "email=user0@example.com";
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const accepted = {
-            source: source.value,
-            masked: maskedOutput.value,
-            mappingCount: api.mappings().length,
-          };
-
-          source.value = "email=new-cap@example.com";
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const rows = Array.from(
-            document.querySelectorAll("#mapping-body tr"),
-          );
-          return {
-            limits,
-            replaceResult,
-            accepted,
-            rejected: {
-              source: source.value,
-              masked: maskedOutput.value,
-              mappingCount: api.mappings().length,
-              toast: toast.textContent,
-            },
-            renderedRows: rows.length,
-            renderedSummary: rows.at(-1)?.textContent || "",
-          };
-        }),
-      );
-      assert.equal(result.replaceResult.loaded, result.limits.maxMappings);
-      assert.equal(result.accepted.masked, "email=MASK_EMAIL_0001");
-      assert.equal(result.accepted.mappingCount, result.limits.maxMappings);
-      assert.equal(result.rejected.source, result.accepted.source);
-      assert.equal(result.rejected.masked, result.accepted.masked);
-      assert.equal(result.rejected.mappingCount, result.limits.maxMappings);
-      assert.match(result.rejected.toast, /対応表は1000件まで/);
-      assert.equal(result.renderedRows, result.limits.mappingRenderMaxRows + 1);
-      assert.match(result.renderedSummary, /表示を省略/);
-    },
-  },
-  {
-    name: "Maskinger normalizes oversized persisted mappings on reload",
-    run: async (page) => {
-      await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const limits = api.limits();
-          const persisted = [
-            {
-              _placeholder: "MASK_SECRET_0001",
-              _type: "SECRET",
-              _original: "x".repeat(limits.mappingOriginalMaxBytes + 1),
-            },
-            {
-              _placeholder: "not-a-mask",
-              _type: "EMAIL",
-              _original: "invalid@example.com",
-            },
-          ];
-          for (let index = 0; index < limits.maxMappings + 25; index += 1) {
-            const number = String(index + 1).padStart(4, "0");
-            persisted.push({
-              _placeholder: `MASK_EMAIL_${number}`,
-              _type: "EMAIL",
-              _original: `persisted${index}@example.com`,
-            });
-          }
-          sessionStorage.setItem(
-            "maskinger.activeMappings.v2",
-            JSON.stringify(persisted),
-          );
-        }),
-      );
-      await page.send("Page.reload", { ignoreCache: true });
-      await waitForReady(
-        page,
-        '!!window.__MaskingerTest && !!document.querySelector("#source-input")',
-      );
-
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          const limits = api.limits();
-          const mappings = api.mappings();
-          const rows = Array.from(
-            document.querySelectorAll("#mapping-body tr"),
-          );
-          const stored = JSON.parse(
-            sessionStorage.getItem("maskinger.activeMappings.v2"),
-          );
-          return {
-            limits,
-            mappingCount: mappings.length,
-            hasOversizedOriginal: mappings.some(
-              (item) => item._original.length > limits.mappingOriginalMaxBytes,
-            ),
-            hasInvalidPlaceholder: mappings.some(
-              (item) => item._placeholder === "not-a-mask",
-            ),
-            firstPlaceholder: mappings[0]?._placeholder,
-            storedCount: stored.length,
-            renderedRows: rows.length,
-            renderedSummary: rows.at(-1)?.textContent || "",
-            toast: document.querySelector("#toast").textContent,
-          };
-        }),
-      );
-      assert.equal(result.mappingCount, result.limits.maxMappings);
-      assert.equal(result.hasOversizedOriginal, false);
-      assert.equal(result.hasInvalidPlaceholder, false);
-      assert.equal(result.firstPlaceholder, "MASK_EMAIL_0001");
-      assert.equal(result.storedCount, result.limits.maxMappings);
-      assert.equal(result.renderedRows, result.limits.mappingRenderMaxRows + 1);
-      assert.match(result.renderedSummary, /表示を省略/);
-      assert.match(result.toast, /安全な上限/);
-    },
-  },
-  {
-    name: "Maskinger rejects mapping creation when serialized storage would exceed cap",
-    run: async (page) => {
-      const first = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const limits = api.limits();
-          const storageKey = "maskinger.activeMappings.v2";
-          const bytesOf = (value) =>
-            new TextEncoder().encode(String(value ?? "")).length;
-          const serializedBytes = (items) => bytesOf(JSON.stringify(items));
-          const mappingFor = (index, original) => ({
-            _placeholder: `MASK_EMAIL_${String(index + 1).padStart(4, "0")}`,
-            _type: "EMAIL",
-            _original: original,
-          });
-          const uniqueOriginal = (index, byteLength) => {
-            const prefix = `value-${index}-`;
-            if (byteLength <= prefix.length)
-              return prefix.slice(0, byteLength).padEnd(byteLength, "x");
-            return prefix + "x".repeat(byteLength - prefix.length);
-          };
-          const buildExactMappings = (targetBytes) => {
-            const mappings = [mappingFor(0, "accepted@example.com")];
-            while (mappings.length < limits.maxMappings) {
-              const index = mappings.length;
-              const candidate = [...mappings, mappingFor(index, "")];
-              const remaining = targetBytes - serializedBytes(candidate);
-              if (remaining < 0)
-                throw new Error(
-                  "Unable to build exact mapping storage fixture",
-                );
-              if (remaining <= limits.mappingOriginalMaxBytes) {
-                candidate[candidate.length - 1]._original = uniqueOriginal(
-                  index,
-                  remaining,
-                );
-                if (serializedBytes(candidate) !== targetBytes) {
-                  throw new Error(
-                    "Exact mapping storage fixture byte length mismatch",
-                  );
-                }
-                return candidate;
-              }
-              candidate[candidate.length - 1]._original = uniqueOriginal(
-                index,
-                limits.mappingOriginalMaxBytes,
-              );
-              mappings.push(candidate[candidate.length - 1]);
-            }
-            throw new Error(
-              "Unable to fit exact mapping storage fixture within mapping count cap",
-            );
-          };
-
-          const exactMappings = buildExactMappings(limits.storageMaxBytes);
-          const replaceResult = api.replaceMappings(exactMappings);
-          const storedBefore = sessionStorage.getItem(storageKey);
-          const source = document.querySelector("#source-input");
-          const maskedOutput = document.querySelector("#masked-output");
-          const toast = document.querySelector("#toast");
-
-          source.value = "email=accepted@example.com";
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const accepted = {
-            source: source.value,
-            masked: maskedOutput.value,
-            mappingCount: api.mappings().length,
-            storedBytes: bytesOf(sessionStorage.getItem(storageKey)),
-          };
-
-          source.value = "email=new-overflow@example.com";
-          source.dispatchEvent(new Event("input", { bubbles: true }));
-          const mappingsAfterReject = api.mappings();
-          const storedAfterReject = sessionStorage.getItem(storageKey);
-
-          return {
-            storageMaxBytes: limits.storageMaxBytes,
-            exactCount: exactMappings.length,
-            exactBytes: serializedBytes(exactMappings),
-            replaceResult,
-            storedBeforeBytes: bytesOf(storedBefore),
-            accepted,
-            rejected: {
-              source: source.value,
-              masked: maskedOutput.value,
-              mappingCount: mappingsAfterReject.length,
-              storedBytes: bytesOf(storedAfterReject),
-              storageSame: storedAfterReject === storedBefore,
-              mappingsSame:
-                JSON.stringify(mappingsAfterReject) === storedBefore,
-              toast: toast.textContent,
-            },
-          };
-        }),
-      );
-      assert.equal(first.exactBytes, first.storageMaxBytes);
-      assert.equal(first.storedBeforeBytes, first.storageMaxBytes);
-      assert.equal(first.replaceResult.loaded, first.exactCount);
-      assert.match(first.accepted.masked, /email=MASK_EMAIL_0001/);
-      assert.equal(first.accepted.mappingCount, first.exactCount);
-      assert.equal(first.accepted.storedBytes, first.storageMaxBytes);
-      assert.equal(first.rejected.source, first.accepted.source);
-      assert.equal(first.rejected.masked, first.accepted.masked);
-      assert.equal(first.rejected.mappingCount, first.exactCount);
-      assert.equal(first.rejected.storedBytes, first.storageMaxBytes);
-      assert.equal(first.rejected.storageSame, true);
-      assert.equal(first.rejected.mappingsSame, true);
-      assert.match(first.rejected.toast, /保存容量|2 MiB/);
-
-      await page.send("Page.reload", { ignoreCache: true });
-      await waitForReady(
-        page,
-        '!!window.__MaskingerTest && !!document.querySelector("#source-input")',
-      );
-
-      const second = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          const storageKey = "maskinger.activeMappings.v2";
-          const bytesOf = (value) =>
-            new TextEncoder().encode(String(value ?? "")).length;
-          return {
-            mappingCount: api.mappings().length,
-            restored: api.restore("MASK_EMAIL_0001").text,
-            storedBytes: bytesOf(sessionStorage.getItem(storageKey)),
-            storageMaxBytes: api.limits().storageMaxBytes,
-          };
-        }),
-      );
-      assert.equal(second.mappingCount, first.exactCount);
-      assert.equal(second.restored, "accepted@example.com");
-      assert.equal(second.storedBytes, second.storageMaxBytes);
-    },
-  },
-  {
-    name: "Maskinger keeps in-memory mappings consistent when sessionStorage save fails",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(() => {
-          const api = window.__MaskingerTest;
-          api.clear();
-          const originalSetItem = Storage.prototype.setItem;
-          Object.defineProperty(Storage.prototype, "setItem", {
-            configurable: true,
-            value(key, value) {
-              if (key === "maskinger.activeMappings.v2") {
-                throw new DOMException("Quota exceeded", "QuotaExceededError");
-              }
-              return originalSetItem.call(this, key, value);
-            },
-          });
-          try {
-            const source = document.querySelector("#source-input");
-            source.value = `token=${"sk-" + "D".repeat(24)}`;
-            source.dispatchEvent(new Event("input", { bubbles: true }));
-            const masked = document.querySelector("#masked-output").value;
-            const mappings = api.mappings();
-            return {
-              masked,
-              mappingCount: mappings.length,
-              stored: sessionStorage.getItem("maskinger.activeMappings.v2"),
-              restored: api.restore(masked).text,
-              toast: document.querySelector("#toast").textContent,
-            };
-          } finally {
-            Object.defineProperty(Storage.prototype, "setItem", {
-              configurable: true,
-              value: originalSetItem,
-            });
-          }
-        }),
-      );
-      assert.match(result.masked, /MASK_SECRET_0001/);
-      assert.equal(result.mappingCount, 1);
-      assert.equal(result.stored, null);
-      assert.equal(result.restored, "token=sk-DDDDDDDDDDDDDDDDDDDDDDDD");
-      assert.match(result.toast, /対応表の保存に失敗/);
-    },
-  },
-  {
-    name: "Maskinger mapping table escapes hostile originals and confines narrow viewport overflow",
-    run: async (page) => {
-      await page.send("Emulation.setDeviceMetricsOverride", {
-        width: 320,
-        height: 640,
-        deviceScaleFactor: 1,
-        mobile: true,
-      });
-      await page.send("Emulation.setTouchEmulationEnabled", { enabled: true });
-      try {
-        const result = await evaluate(
-          page,
-          js(() => {
-            window.__MaskingerTest.clear();
-            const source = document.querySelector("#source-input");
-            source.value = [
-              "secret=<img src=x onerror=alert(1)",
-              "card=4111 1111 1111 1111",
-            ].join("\n");
-            source.dispatchEvent(new Event("input", { bubbles: true }));
-            const originalCells = Array.from(
-              document.querySelectorAll(".original-cell"),
-            );
-            const mappingScroll = document.querySelector(".mapping-body");
-            const textareaRects = Array.from(
-              document.querySelectorAll("textarea"),
-            ).map((node) => {
-              const rect = node.getBoundingClientRect();
-              return {
-                id: node.id,
-                left: rect.left,
-                right: rect.right,
-                top: rect.top,
-                bottom: rect.bottom,
-              };
-            });
-            return {
-              bodyOverflow: document.body.scrollWidth - window.innerWidth,
-              documentOverflow:
-                document.documentElement.scrollWidth - window.innerWidth,
-              mappingScrollContainsOverflow:
-                mappingScroll.scrollWidth > mappingScroll.clientWidth,
-              mappingScrollWithinViewport: (() => {
-                const rect = mappingScroll.getBoundingClientRect();
-                return rect.left >= -1 && rect.right <= window.innerWidth + 1;
-              })(),
-              originalInnerHTML: originalCells.map((cell) => cell.innerHTML),
-              originalText: originalCells.map((cell) => cell.textContent),
-              xss: window.__maskingerXss || 0,
-              textareaOffscreen: textareaRects.filter(
-                (rect) => rect.left < -1 || rect.right > window.innerWidth + 1,
-              ),
-            };
-          }),
-        );
-        assert.ok(
-          result.bodyOverflow <= 1,
-          `Maskinger body overflowed by ${result.bodyOverflow}px`,
-        );
-        assert.ok(
-          result.documentOverflow <= 1,
-          `Maskinger document overflowed by ${result.documentOverflow}px`,
-        );
-        assert.equal(result.mappingScrollContainsOverflow, true);
-        assert.equal(result.mappingScrollWithinViewport, true);
-        assert.equal(
-          result.originalInnerHTML.some(
-            (html) => html.includes("<script") || html.includes("<img"),
-          ),
-          false,
-        );
-        assert.equal(
-          result.originalText.some((text) => text.includes("<img")),
-          true,
-        );
-        assert.equal(result.xss, 0);
-        assert.deepEqual(result.textareaOffscreen, []);
-      } finally {
-        await page.send("Emulation.setTouchEmulationEnabled", {
-          enabled: false,
-        });
-        await page.send("Emulation.clearDeviceMetricsOverride");
-      }
-    },
-  },
-  {
-    name: "Maskinger copy fallback reports execCommand false and throw as failure",
-    run: async (page) => {
-      const result = await evaluate(
-        page,
-        js(async () => {
-          const originalExecCommand = document.execCommand;
-          const originalClipboard = navigator.clipboard;
-          const originalIsSecureContext = window.isSecureContext;
-          const calls = [];
-          const delay = () => new Promise((resolve) => setTimeout(resolve, 30));
-          const button = document.querySelector("#copy-masked-btn");
-          const output = document.querySelector("#masked-output");
-          output.value = "MASK_SECRET_0001";
-
-          const clickWithExec = async (execHandler) => {
-            document.execCommand = (command) => {
-              calls.push(command);
-              return execHandler(command);
-            };
-            button.click();
-            await delay();
-            const snapshot = {
-              label: button.textContent,
-              calls: [...calls],
-            };
-            calls.length = 0;
-            return snapshot;
-          };
-
-          try {
-            try {
-              Object.defineProperty(navigator, "clipboard", {
-                configurable: true,
-                value: null,
-              });
-            } catch {}
-            try {
-              Object.defineProperty(window, "isSecureContext", {
-                configurable: true,
-                value: false,
-              });
-            } catch {}
-
-            const success = await clickWithExec(() => true);
-            const falseFailure = await clickWithExec(() => false);
-            const throwFailure = await clickWithExec(() => {
-              throw new Error("copy failed");
-            });
-
-            return { success, falseFailure, throwFailure };
-          } finally {
-            document.execCommand = originalExecCommand;
-            try {
-              Object.defineProperty(navigator, "clipboard", {
-                configurable: true,
-                value: originalClipboard,
-              });
-            } catch {}
-            try {
-              Object.defineProperty(window, "isSecureContext", {
-                configurable: true,
-                value: originalIsSecureContext,
-              });
-            } catch {}
-          }
-        }),
-      );
-      assert.deepEqual(result.success.calls, ["copy"]);
-      assert.match(result.success.label, /コピーしました/);
-      assert.deepEqual(result.falseFailure.calls, ["copy"]);
-      assert.match(result.falseFailure.label, /コピー失敗/);
-      assert.deepEqual(result.throwFailure.calls, ["copy"]);
-      assert.match(result.throwFailure.label, /コピー失敗/);
     },
   },
 ];
 
 const indexIntegrationTests = [
+  {
+    name: "index direct launch resolves to the current app and opens the editor",
+    run: async (page) => {
+      const href = await evaluate(
+        page,
+        'document.querySelector(".lp-actions a").href',
+      );
+      assert.equal(
+        await readFile(new URL(href), "utf8"),
+        await readFile(appPath, "utf8"),
+      );
+      try {
+        await evaluate(page, 'document.querySelector(".lp-actions a").click()');
+        await waitForReady(
+          page,
+          'Boolean(document.querySelector("#blocks .block"))',
+        );
+        assert.equal(await evaluate(page, "location.href"), href);
+        assert.equal(
+          await evaluate(
+            page,
+            'Boolean(document.querySelector("#export-btn"))',
+          ),
+          true,
+        );
+      } finally {
+        await page.send("Page.navigate", { url: indexUrl });
+        await waitForReady(page, "window.__LeafNoteIndexReady === true");
+      }
+    },
+  },
+
+  {
+    name: "index copy falls back after clipboard permission rejection and copies the exact distribution source",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(async () => {
+          const clipboard = Object.getOwnPropertyDescriptor(
+              navigator,
+              "clipboard",
+            ),
+            originalExec = document.execCommand;
+          let copied = "";
+          try {
+            Object.defineProperty(navigator, "clipboard", {
+              configurable: true,
+              value: {
+                writeText: async () => {
+                  throw new Error("Denied");
+                },
+              },
+            });
+            document.execCommand = (command) => {
+              if (command === "copy") copied = document.activeElement.value;
+              return true;
+            };
+            const button = document.querySelector("[data-copy-source]");
+            button.click();
+            for (let i = 0; i < 50 && button.disabled; i++)
+              await new Promise((r) => setTimeout(r, 10));
+            return {
+              exact:
+                copied ===
+                JSON.parse(
+                  document.querySelector("#leafnote-source").textContent,
+                ),
+              fields: document.querySelectorAll("textarea").length,
+              enabled: !button.disabled,
+              busy: button.hasAttribute("aria-busy"),
+              message: document.querySelector("[data-copy-toast]").textContent,
+            };
+          } finally {
+            document.execCommand = originalExec;
+            if (clipboard)
+              Object.defineProperty(navigator, "clipboard", clipboard);
+            else delete navigator.clipboard;
+          }
+        }),
+      );
+      assert.deepEqual(result, {
+        exact: true,
+        fields: 0,
+        enabled: true,
+        busy: false,
+        message: "LeafNote source copied.",
+      });
+    },
+  },
   {
     name: "index download and setup instructions fit phone, tablet and desktop widths",
     run: async (page) => {
@@ -5292,8 +5072,9 @@ const indexIntegrationTests = [
       assert.match(result.success.message, /Download started/);
       assert.equal(result.enabled, true);
       assert.match(result.failure, /could not start/);
-      assert.equal(result.openHref, "./LeafNote.html");
-      assert.match(result.backupHelp, /not updated automatically/);
+      assert.equal(result.openHref, `./${APP_FILE_NAME}`);
+      assert.match(result.backupHelp, /original file is not updated/);
+      assert.match(result.backupHelp, /HTMLバックアップ \(HTML backup\)/);
     },
   },
   {
@@ -5456,6 +5237,590 @@ const indexIntegrationTests = [
 
 const integrationTests = [
   {
+    name: "QA regression: confirmed large pastes retain their original DOM event target",
+    run: async (page) => {
+      const rows = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const results = [];
+          const delay = () => new Promise((resolve) => setTimeout(resolve, 0));
+          const originalExec = document.execCommand;
+          document.execCommand = () => false;
+          try {
+            for (const kind of [
+              "table",
+              "image",
+              "title",
+              "document",
+              "code",
+            ]) {
+              const draft = api.createInitialState();
+              const current = draft.pages[draft.currentPageId];
+              current.blocks = [
+                api.blk("table", "", { rows: 1, cols: 1, cells: [[""]] }),
+                api.blk("image", "", { url: "data:image/png;base64,eA==" }),
+                api.blk("code", ""),
+              ];
+              api.setState(draft);
+              api.renderAll();
+              const selector = {
+                table: ".simple-table th, .simple-table td",
+                image: ".image-caption",
+                title: "#page-title",
+                document: "#document-name",
+                code: ".code-block-content code",
+              }[kind];
+              const target = document.querySelector(selector);
+              target.focus();
+              const range = document.createRange();
+              range.selectNodeContents(target);
+              getSelection().removeAllRanges();
+              getSelection().addRange(range);
+              const clipboard = new DataTransfer();
+              if (kind === "title" || kind === "document") {
+                // 欄の文字数上限を超えずに、非同期のクリップボード警告を発生させる。
+                // 上限を超える本文は拒否されるため、警告の条件を別に満たす。
+                clipboard.setData("text/plain", "confirmed-name");
+                clipboard.setData(
+                  "text/html",
+                  "<!--" +
+                    "x".repeat(CLIPBOARD_PASTE_WARN_BYTES) +
+                    "-->confirmed-name",
+                );
+              } else {
+                clipboard.setData(
+                  "text/plain",
+                  "confirmed-" + "x".repeat(CLIPBOARD_PASTE_WARN_BYTES),
+                );
+              }
+              const event = new Event("paste", {
+                bubbles: true,
+                cancelable: true,
+              });
+              Object.defineProperty(event, "clipboardData", {
+                value: clipboard,
+              });
+              target.dispatchEvent(event);
+              const warned = !document.querySelector("#dialog-overlay").hidden;
+              document.querySelector("#dialog-box [data-ok]").click();
+              await delay();
+              const value =
+                kind === "table"
+                  ? current.blocks[0].cells[0][0]
+                  : kind === "image"
+                    ? current.blocks[1].caption
+                    : kind === "title"
+                      ? current.title
+                      : kind === "document"
+                        ? api.getState().workspaceName
+                        : current.blocks[2].content;
+              const failureDialog =
+                !document.querySelector("#dialog-overlay").hidden;
+              results.push({
+                kind,
+                warned,
+                inserted: value.startsWith("confirmed-"),
+                failureDialog,
+              });
+              if (failureDialog) {
+                document.querySelector("#dialog-box [data-ok]").click();
+                await delay();
+              }
+            }
+            return results;
+          } finally {
+            document.execCommand = originalExec;
+          }
+        }),
+      );
+      for (const row of rows) {
+        assert.equal(row.warned, true, row.kind);
+        assert.equal(row.inserted, true, row.kind);
+        assert.equal(row.failureDialog, false, row.kind);
+      }
+    },
+  },
+  {
+    name: "QA regression: delayed markdown paste never uses a stale list index or detached target",
+    run: async (page) => {
+      const rows = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const rows = [];
+          const delay = () => new Promise((resolve) => setTimeout(resolve, 0));
+          for (const scenario of [
+            "moved",
+            "removed",
+            "navigated",
+            "restored",
+            "edited",
+          ]) {
+            const draft = api.createInitialState();
+            const first = draft.pages[draft.currentPageId];
+            const other = api.createPage(null, { title: "Other" });
+            first.blocks = [api.blk("text", ""), api.blk("text", "keep")];
+            api.setState(draft);
+            api.renderAll();
+            const block = first.blocks[0];
+            const target = document.querySelector(
+              `[data-block-id="${block.id}"]`,
+            );
+            target.focus();
+            const clipboard = new DataTransfer();
+            clipboard.setData(
+              "text/markdown",
+              "# " + "x".repeat(CLIPBOARD_PASTE_WARN_BYTES),
+            );
+            const event = new Event("paste", {
+              bubbles: true,
+              cancelable: true,
+            });
+            Object.defineProperty(event, "clipboardData", { value: clipboard });
+            target.dispatchEvent(event);
+            if (scenario === "moved")
+              first.blocks.unshift(api.blk("text", "inserted before"));
+            if (scenario === "removed") first.blocks.shift();
+            if (scenario === "navigated") api.switchPage(other.id);
+            if (scenario === "restored")
+              api.setState(JSON.parse(JSON.stringify(api.getState())));
+            if (scenario === "edited") {
+              block.content = "new edit";
+              target.textContent = "new edit";
+            }
+            const before = JSON.stringify(api.getState());
+            document.querySelector("#dialog-box [data-ok]").click();
+            await delay();
+            const blocks = api.getState().pages[first.id].blocks;
+            rows.push({
+              scenario,
+              unchanged: before === JSON.stringify(api.getState()),
+              contents: blocks.map((b) => b.content.slice(0, 20)),
+              types: blocks.map((b) => b.type),
+            });
+          }
+          return rows;
+        }),
+      );
+      for (const row of rows) {
+        if (row.scenario === "moved") {
+          assert.deepEqual(row.types, ["text", "h1", "text"]);
+          assert.equal(row.contents[0], "inserted before");
+          assert.equal(row.contents[2], "keep");
+        } else assert.equal(row.unchanged, true, row.scenario);
+      }
+    },
+  },
+  {
+    name: "QA regression: delayed media insertion preserves edits and resolves live block positions",
+    run: async (page) => {
+      const rows = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const OriginalReader = window.FileReader;
+          const originalAlert = showAlert;
+          const readers = [];
+          window.FileReader = class {
+            readAsDataURL(file) {
+              this.file = file;
+              readers.push(this);
+            }
+          };
+          showAlert = async () => {};
+          const results = [];
+          try {
+            for (const kind of ["image", "file"]) {
+              for (const scenario of [
+                "edited",
+                "moved",
+                "removed",
+                "navigated",
+                "trashed",
+                "restored",
+                "capacity",
+              ]) {
+                const draft = api.createInitialState();
+                const first = draft.pages[draft.currentPageId];
+                const other = api.createPage(null, { title: "Other" });
+                first.blocks = [
+                  api.blk("text", scenario === "edited" ? "" : "anchor"),
+                  api.blk("text", "tail"),
+                ];
+                api.setState(draft);
+                api.renderAll();
+                const anchor = first.blocks[0];
+                const file = new File(
+                  ["x"],
+                  kind === "image" ? "x.png" : "x.txt",
+                  { type: kind === "image" ? "image/png" : "text/plain" },
+                );
+                const pending = api.internals[
+                  kind === "image"
+                    ? "_insertImageBlockFromFile"
+                    : "_insertFileBlockFromFile"
+                ](file, anchor);
+                for (let i = 0; !readers.length && i < 20; i++)
+                  await Promise.resolve();
+                if (!readers.length) throw new Error("Reader did not start");
+                if (scenario === "edited") {
+                  const editable = document.querySelector(
+                    `[data-block-id="${anchor.id}"]`,
+                  );
+                  editable.textContent = "typed while loading";
+                  editable.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                if (scenario === "moved")
+                  first.blocks.unshift(
+                    api.blk("text", "inserted before anchor"),
+                  );
+                if (scenario === "removed") first.blocks.shift();
+                if (scenario === "navigated") api.switchPage(other.id);
+                if (scenario === "trashed") api.deletePage(first.id);
+                if (scenario === "restored")
+                  api.setState(JSON.parse(JSON.stringify(api.getState())));
+                if (scenario === "capacity") {
+                  while (first.blocks.length < BLOCK_MAX_COUNT_PER_PAGE)
+                    first.blocks.push(api.blk("divider", ""));
+                }
+                const before = JSON.stringify(api.getState());
+                const otherRevision = other.updatedAt;
+                const reader = readers.shift();
+                reader.result = `data:${file.type};base64,eA==`;
+                reader.onload();
+                const success = await pending;
+                const currentFirst = api.getState().pages[first.id];
+                results.push({
+                  kind,
+                  scenario,
+                  success,
+                  unchanged: before === JSON.stringify(api.getState()),
+                  anchorContent: currentFirst.blocks.find(
+                    (b) => b.id === anchor.id,
+                  )?.content,
+                  anchorType: currentFirst.blocks.find(
+                    (b) => b.id === anchor.id,
+                  )?.type,
+                  mediaIndex: currentFirst.blocks.findIndex(
+                    (b) => b.type === kind,
+                  ),
+                  anchorIndex: currentFirst.blocks.findIndex(
+                    (b) => b.id === anchor.id,
+                  ),
+                  count: currentFirst.blocks.length,
+                  currentPage: api.getState().currentPageId === other.id,
+                  otherUnchanged:
+                    other.updatedAt === otherRevision &&
+                    other.blocks.length === 1,
+                  sourceTouched:
+                    first.updatedAt === api.getState().lastModifiedAt,
+                });
+              }
+            }
+            return results;
+          } finally {
+            window.FileReader = OriginalReader;
+            showAlert = originalAlert;
+          }
+        }),
+      );
+      for (const row of rows) {
+        const label = `${row.kind}: ${row.scenario}`;
+        const rejected = [
+          "removed",
+          "trashed",
+          "restored",
+          "capacity",
+        ].includes(row.scenario);
+        assert.equal(row.success, !rejected, label);
+        if (rejected) assert.equal(row.unchanged, true, label);
+        else {
+          assert.equal(row.anchorType, "text", label);
+          assert.equal(row.mediaIndex, row.anchorIndex + 1, label);
+          if (row.scenario === "edited")
+            assert.equal(row.anchorContent, "typed while loading", label);
+          if (row.scenario === "navigated") {
+            assert.equal(row.currentPage, true, label);
+            assert.equal(row.otherUnchanged, true, label);
+            assert.equal(row.sourceTouched, true, label);
+          }
+        }
+      }
+    },
+  },
+  {
+    name: "QA regression: media replacements reject stale readers and keep the latest user choice",
+    run: async (page) => {
+      const rows = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const OriginalReader = window.FileReader;
+          const readers = [];
+          window.FileReader = class {
+            readAsDataURL(file) {
+              this.file = file;
+              readers.push(this);
+            }
+          };
+          const waitForReader = async () => {
+            for (let i = 0; !readers.length && i < 20; i++)
+              await Promise.resolve();
+            if (!readers.length) throw new Error("Reader did not start");
+            return readers.shift();
+          };
+          const finish = (reader, encoded = "eA==") => {
+            reader.result = `data:${reader.file.type};base64,${encoded}`;
+            reader.onload();
+          };
+          const results = [];
+          try {
+            for (const kind of ["image", "file"]) {
+              for (const scenario of [
+                "latest",
+                "converted",
+                "removed",
+                "restored",
+                "url_changed",
+              ]) {
+                if (scenario === "url_changed" && kind === "file") continue;
+                const draft = api.createInitialState();
+                draft.pages[draft.currentPageId].blocks = [
+                  api.blk(kind, ""),
+                  api.blk("text", "keep"),
+                ];
+                api.setState(draft);
+                api.renderAll();
+                const current =
+                  api.getState().pages[api.getState().currentPageId];
+                const block = current.blocks[0];
+                const file = new File(
+                  ["x"],
+                  "old." + (kind === "image" ? "png" : "txt"),
+                  { type: kind === "image" ? "image/png" : "text/plain" },
+                );
+                const load =
+                  api.internals[
+                    kind === "image" ? "loadImageFromFile" : "loadFileFromFile"
+                  ];
+                const pending = load(file, block);
+                const oldReader = await waitForReader();
+                let secondSuccess = null;
+                if (scenario === "latest") {
+                  const second = load(
+                    new File(
+                      ["y"],
+                      "new." + (kind === "image" ? "png" : "txt"),
+                      { type: file.type },
+                    ),
+                    block,
+                  );
+                  finish(await waitForReader(), "eQ==");
+                  secondSuccess = await second;
+                }
+                if (scenario === "converted")
+                  api.internals.convertBlockType(block, "text");
+                if (scenario === "removed") current.blocks.shift();
+                if (scenario === "restored")
+                  api.setState(JSON.parse(JSON.stringify(api.getState())));
+                if (scenario === "url_changed")
+                  await api.internals.applyImageUrlInput(
+                    block,
+                    "https://example.com/new.png",
+                  );
+                const before = JSON.stringify(api.getState());
+                finish(oldReader);
+                results.push({
+                  kind,
+                  scenario,
+                  secondSuccess,
+                  success: await pending,
+                  unchanged: before === JSON.stringify(api.getState()),
+                });
+              }
+            }
+            return results;
+          } finally {
+            window.FileReader = OriginalReader;
+          }
+        }),
+      );
+      for (const row of rows) {
+        assert.equal(row.success, false, `${row.kind}: ${row.scenario}`);
+        assert.equal(row.unchanged, true, `${row.kind}: ${row.scenario}`);
+        if (row.scenario === "latest") assert.equal(row.secondSuccess, true);
+      }
+    },
+  },
+  {
+    name: "QA regression: concurrent file completions recheck the actual embedded data budget",
+    run: async (page) => {
+      const result = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const OriginalReader = window.FileReader;
+          const originalEstimate = _estimateLocalEmbeddedDataTotalBytes;
+          const originalAlert = showAlert;
+          const readers = [];
+          const alerts = [];
+          window.FileReader = class {
+            readAsDataURL(file) {
+              this.file = file;
+              readers.push(this);
+            }
+          };
+          showAlert = async (message) => {
+            alerts.push(message);
+          };
+          // 100 MiBを実際に確保せず、容量上限まで残り1バイトの文書を再現する。
+          _estimateLocalEmbeddedDataTotalBytes = (...args) =>
+            LOCAL_EMBEDDED_DATA_TOTAL_MAX_BYTES - 1 + originalEstimate(...args);
+          const originalConfirm = showConfirm;
+          showConfirm = async () => true;
+          try {
+            const draft = api.createInitialState();
+            draft.pages[draft.currentPageId].blocks = [
+              api.blk("text", ""),
+              api.blk("text", ""),
+            ];
+            api.setState(draft);
+            const blocks =
+              api.getState().pages[api.getState().currentPageId].blocks;
+            const file = new File(["x"], "one.txt", { type: "text/plain" });
+            const first = api.internals._insertFileBlockFromFile(
+              file,
+              blocks[0],
+            );
+            const second = api.internals._insertFileBlockFromFile(
+              file,
+              blocks[1],
+            );
+            for (let i = 0; readers.length < 2 && i < 30; i++)
+              await Promise.resolve();
+            if (readers.length !== 2) throw new Error("Readers did not start");
+            for (const reader of readers) {
+              reader.result = "data:text/plain;base64,eA==";
+              reader.onload();
+            }
+            const outcomes = await Promise.all([first, second]);
+            return {
+              outcomes,
+              alerts: alerts.length,
+              types: blocks.map((b) => b.type),
+              bytes: originalEstimate(),
+            };
+          } finally {
+            window.FileReader = OriginalReader;
+            _estimateLocalEmbeddedDataTotalBytes = originalEstimate;
+            showAlert = originalAlert;
+            showConfirm = originalConfirm;
+          }
+        }),
+      );
+      assert.deepEqual(result.outcomes, [true, false]);
+      assert.deepEqual(result.types, ["file", "text"]);
+      assert.equal(result.bytes, 1);
+      assert.equal(result.alerts, 1);
+    },
+  },
+  {
+    name: "QA regression: delayed keyboard cut never deletes edits made after copying began",
+    run: async (page) => {
+      const rows = await evaluate(
+        page,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const originalExec = document.execCommand;
+          const originalClipboard = navigator.clipboard;
+          document.execCommand = () => false;
+          const results = [];
+          try {
+            for (const scenario of [
+              "edited",
+              "child_edited",
+              "navigated",
+              "restored",
+              "selection_changed",
+            ]) {
+              const draft = api.createInitialState();
+              const first = draft.pages[draft.currentPageId];
+              const other = api.createPage(null, { title: "Other" });
+              first.blocks = [
+                api.blk("toggle", "copied", {
+                  children: [api.blk("text", "original child")],
+                }),
+                api.blk("text", "keep"),
+              ];
+              api.setState(draft);
+              api.renderAll();
+              let complete;
+              let copied;
+              Object.defineProperty(navigator, "clipboard", {
+                configurable: true,
+                value: {
+                  writeText: (text) => {
+                    copied = text;
+                    return new Promise((resolve) => {
+                      complete = resolve;
+                    });
+                  },
+                },
+              });
+              const selection = api.internals.BlockSelection;
+              selection.selectOne(first.blocks[0].id);
+              document.activeElement?.blur();
+              document.dispatchEvent(
+                new KeyboardEvent("keydown", {
+                  key: "x",
+                  metaKey: true,
+                  bubbles: true,
+                  cancelable: true,
+                }),
+              );
+              if (!complete) throw new Error("Clipboard write did not start");
+              if (scenario === "edited")
+                first.blocks[0].content = "new text not in clipboard";
+              if (scenario === "child_edited")
+                first.blocks[0].children[0].content =
+                  "new child not in clipboard";
+              if (scenario === "navigated") api.switchPage(other.id);
+              if (scenario === "restored")
+                api.setState(JSON.parse(JSON.stringify(api.getState())));
+              if (scenario === "selection_changed")
+                selection.selectOne(first.blocks[1].id);
+              const before = JSON.stringify(api.getState());
+              const selected = JSON.stringify(selection.getSelectedIds());
+              complete();
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              results.push({
+                scenario,
+                copied,
+                unchanged: before === JSON.stringify(api.getState()),
+                selectionUnchanged:
+                  selected === JSON.stringify(selection.getSelectedIds()),
+              });
+              selection.clear();
+            }
+            return results;
+          } finally {
+            document.execCommand = originalExec;
+            Object.defineProperty(navigator, "clipboard", {
+              configurable: true,
+              value: originalClipboard,
+            });
+          }
+        }),
+      );
+      for (const row of rows) {
+        assert.match(row.copied, /copied/);
+        assert.equal(row.unchanged, true, row.scenario);
+        assert.equal(row.selectionUnchanged, true, row.scenario);
+      }
+    },
+  },
+  {
     name: "mobile sidebar hides inaccessible controls and returns to the note after navigation",
     run: async (page) => {
       await page.send("Emulation.setDeviceMetricsOverride", {
@@ -5571,6 +5936,123 @@ const integrationTests = [
     },
   },
   {
+    name: "mobile page menus receive pointer input and return rename focus to the editor",
+    run: async (page) => {
+      const click = async (selector) => {
+        const point = await evaluate(
+          page,
+          jsWithArgs((selector) => {
+            const rect = document
+              .querySelector(selector)
+              .getBoundingClientRect();
+            return {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            };
+          }, selector),
+        );
+        await page.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...point,
+        });
+        await page.send("Input.dispatchMouseEvent", {
+          type: "mousePressed",
+          button: "left",
+          clickCount: 1,
+          ...point,
+        });
+        await page.send("Input.dispatchMouseEvent", {
+          type: "mouseReleased",
+          button: "left",
+          clickCount: 1,
+          ...point,
+        });
+      };
+      try {
+        await page.send("Emulation.setDeviceMetricsOverride", {
+          width: 390,
+          height: 844,
+          deviceScaleFactor: 1,
+          mobile: false,
+        });
+        await evaluate(
+          page,
+          js(async () => {
+            const api = window.__LeafNoteTest;
+            api.setState(api.createInitialState());
+            api.renderAll();
+            await new Promise((resolve) => setTimeout(resolve, 80));
+            api.internals.syncSidebarViewportMode();
+          }),
+        );
+        await click("#sidebar-open");
+        await evaluate(
+          page,
+          js(() => new Promise((resolve) => setTimeout(resolve, 200))),
+        );
+        await click(".page-item.active .page-item-action");
+        const menu = await evaluate(
+          page,
+          js(() => {
+            const menu = document.querySelector("#context-menu");
+            const first = menu.querySelector(".ctx-item");
+            const rect = first.getBoundingClientRect();
+            const hit = first.contains(
+              document.elementFromPoint(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+              ),
+            );
+            const items = [...menu.querySelectorAll("button:not([disabled])")];
+            items.at(-1).focus();
+            document.activeElement.dispatchEvent(
+              new KeyboardEvent("keydown", {
+                key: "Tab",
+                bubbles: true,
+                cancelable: true,
+              }),
+            );
+            return {
+              visible: !menu.hidden,
+              hit,
+              tabContained: document.activeElement === first,
+            };
+          }),
+        );
+        assert.deepEqual(menu, {
+          visible: true,
+          hit: true,
+          tabContained: true,
+        });
+        await click("#context-menu .ctx-item");
+        const renamed = await evaluate(
+          page,
+          js(() => ({
+            collapsed: document
+              .querySelector("#sidebar")
+              .classList.contains("collapsed"),
+            mainInert: document.querySelector(".main").inert,
+            focus: document.activeElement.id,
+          })),
+        );
+        assert.deepEqual(renamed, {
+          collapsed: true,
+          mainInert: false,
+          focus: "page-title",
+        });
+      } finally {
+        await page.send("Emulation.clearDeviceMetricsOverride");
+        await evaluate(
+          page,
+          js(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 80));
+            window.__LeafNoteTest.internals.syncSidebarViewportMode();
+          }),
+        );
+      }
+    },
+  },
+  {
     name: "settings preserve keyboard focus and nested dialogs isolate background controls",
     run: async (page) => {
       const result = await evaluate(
@@ -5578,7 +6060,9 @@ const integrationTests = [
         js(async () => {
           const api = window.__LeafNoteTest;
           const delay = () => new Promise((resolve) => setTimeout(resolve, 80));
-          api.setState(api.createInitialState());
+          const initial = api.createInitialState();
+          initial.uiLanguage = "en";
+          api.setState(initial);
           api.renderAll();
           // The preceding mobile test changes the viewport. Let WebKit commit
           // desktop visibility/inert state before capturing the opener focus.
@@ -7185,11 +7669,8 @@ const integrationTests = [
           const themeOverlayOpen = !document.querySelector(
             "#theme-customizer-overlay",
           ).hidden;
-          const widthButtons = Array.from(
-            document.querySelectorAll("#theme-body .theme-radio"),
-          );
-          const fullButton = widthButtons.find((button) =>
-            /full/i.test(button.textContent),
+          const fullButton = document.querySelector(
+            '#theme-body [data-focus-key="width-full"]',
           );
           if (fullButton) fullButton.click();
           await delay();
@@ -7230,6 +7711,7 @@ const integrationTests = [
           const delay = (ms = 50) =>
             new Promise((resolve) => setTimeout(resolve, ms));
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           const root = s.pages[s.currentPageId];
           root.title = "Root Chrome";
           root.blocks = [api.blk("text", "root body")];
@@ -7287,11 +7769,12 @@ const integrationTests = [
           const promptOverlayPromise =
             api.internals.showPrompt("Close from overlay");
           await delay();
-          const overlayMouse = new MouseEvent("mousedown", {
+          const overlayMouse = new PointerEvent("pointerdown", {
             bubbles: true,
-            cancelable: true,
+            button: 0,
           });
           document.querySelector("#dialog-overlay").dispatchEvent(overlayMouse);
+          document.querySelector("#dialog-overlay").click();
           const promptOverlayResult = await promptOverlayPromise;
 
           const promptEscapePromise =
@@ -7443,8 +7926,9 @@ const integrationTests = [
           document
             .querySelector("#search-overlay")
             .dispatchEvent(
-              new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+              new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
             );
+          document.querySelector("#search-overlay").click();
           await delay();
           const searchClosedByOverlay =
             document.querySelector("#search-overlay").hidden;
@@ -7458,12 +7942,14 @@ const integrationTests = [
               ),
             ).find((item) => pattern.test(item.textContent));
             if (!row) throw new Error(`Shortcut row not found: ${pattern}`);
+            const group = row.closest("details");
+            if (group && !group.open) group.querySelector("summary").click();
             row.click();
             await delay(100);
             return row.textContent;
           };
 
-          await clickShortcut(/Customize theme/i);
+          await clickShortcut(/^Settings/i);
           const themeOpenedFromShortcut = !document.querySelector(
             "#theme-customizer-overlay",
           ).hidden;
@@ -7493,16 +7979,12 @@ const integrationTests = [
             .classList.contains("collapsed");
 
           const resizer = document.querySelector("#sidebar-resizer");
-          const resizeStart = new MouseEvent("mousedown", {
+          const resizeKey = new KeyboardEvent("keydown", {
             bubbles: true,
             cancelable: true,
-            clientX: 260,
+            key: "ArrowRight",
           });
-          resizer.dispatchEvent(resizeStart);
-          document.dispatchEvent(
-            new MouseEvent("mousemove", { bubbles: true, clientX: 320 }),
-          );
-          document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+          resizer.dispatchEvent(resizeKey);
           resizer.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
           await delay();
           const sidebarWidth = getComputedStyle(document.documentElement)
@@ -7519,7 +8001,7 @@ const integrationTests = [
           HTMLInputElement.prototype.click = function () {
             inputClickCount++;
           };
-          await clickShortcut(/Import Markdown file/i);
+          await clickShortcut(/Import Markdown/i);
           HTMLInputElement.prototype.click = originalInputClick;
 
           let shortcutMarkdownBlobType = "";
@@ -7528,11 +8010,11 @@ const integrationTests = [
             return "blob:shortcut-markdown";
           };
           URL.revokeObjectURL = () => {};
-          await clickShortcut(/Export current note as Markdown/i);
+          await clickShortcut(/Export this note as Markdown/i);
           URL.createObjectURL = originalCreate;
           URL.revokeObjectURL = originalRevoke;
 
-          await clickShortcut(/^Save/i);
+          await clickShortcut(/^HTML backup/i);
           const saveDialogFromShortcut =
             !document.querySelector("#dialog-overlay").hidden;
           document.querySelector("#dialog-box [data-cancel]").click();
@@ -7606,7 +8088,7 @@ const integrationTests = [
             darkAfterShortcut,
             sidebarCollapsedFromShortcut,
             sidebarReopened,
-            resizeStartPrevented: resizeStart.defaultPrevented,
+            resizeKeyPrevented: resizeKey.defaultPrevented,
             sidebarWidth,
             sidebarMinWidth,
             sidebarMinCss,
@@ -7650,7 +8132,7 @@ const integrationTests = [
       assert.equal(result.darkAfterShortcut, true);
       assert.equal(result.sidebarCollapsedFromShortcut, true);
       assert.equal(result.sidebarReopened, true);
-      assert.equal(result.resizeStartPrevented, true);
+      assert.equal(result.resizeKeyPrevented, true);
       assert.equal(result.sidebarWidth, "260px");
       assert.equal(result.sidebarMinWidth, 180);
       assert.equal(result.sidebarMinCss, "180px");
@@ -7680,6 +8162,7 @@ const integrationTests = [
         js(async () => {
           const api = window.__LeafNoteTest;
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           s.workspaceName = "Storage Document";
           const current = s.pages[s.currentPageId];
           current.title = "Storage Page";
@@ -7696,6 +8179,7 @@ const integrationTests = [
             JSON.parse(localStorage.getItem(key) || "{}"),
           );
           return {
+            loadedUiLanguage: loaded.uiLanguage,
             loadedName: loaded.workspaceName,
             loadedTitle: loaded.pages[loaded.currentPageId].title,
             loadedBody: loaded.pages[loaded.currentPageId].blocks[0].content,
@@ -7706,6 +8190,7 @@ const integrationTests = [
           };
         }),
       );
+      assert.equal(result.loadedUiLanguage, "en");
       assert.equal(result.loadedName, "Storage Document");
       assert.equal(result.loadedTitle, "Storage Page");
       assert.equal(result.loadedBody, "persisted body");
@@ -7982,6 +8467,7 @@ const integrationTests = [
           const delay = (ms = 40) =>
             new Promise((resolve) => setTimeout(resolve, ms));
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           api.setState(s);
           const state = api.getState();
           const current = state.pages[state.currentPageId];
@@ -7995,7 +8481,7 @@ const integrationTests = [
             fileDataUrl: "data:text/plain;base64,SGk=",
           });
           const imageCard = api.blk("image", "", {
-            url: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+            url: "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=",
             caption: "Old caption",
           });
           current.blocks = [
@@ -8043,16 +8529,6 @@ const integrationTests = [
             imageCard,
           ];
           api.renderAll();
-          await Promise.all(
-            [...document.querySelectorAll(".image-wrap img")].map((image) =>
-              image.decode(),
-            ),
-          );
-          await Promise.all(
-            [...document.querySelectorAll(".image-wrap img")].map((image) =>
-              image.decode(),
-            ),
-          );
 
           document.querySelector(".toc-link").click();
           await delay();
@@ -8214,7 +8690,7 @@ const integrationTests = [
             .click();
           await delay();
           document.querySelector("#dialog-box .dialog-input").value =
-            "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
           document.querySelector("#dialog-box [data-ok]").click();
           await delay();
 
@@ -8362,13 +8838,18 @@ const integrationTests = [
           const api = window.__LeafNoteTest;
           const delay = () => new Promise((resolve) => setTimeout(resolve, 40));
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           const current = s.pages[s.currentPageId];
           current.title = "Menu Page";
           current.blocks = [api.blk("text", "")];
           api.setState(s);
           api.renderAll();
+          await delay();
           const content = document.querySelector("[data-block-id]");
+          content.focus();
+          await delay();
           content.textContent = "/table";
+          placeCaret(content, "end");
           content.dispatchEvent(
             new InputEvent("input", {
               bubbles: true,
@@ -8455,6 +8936,7 @@ const integrationTests = [
           const delay = (ms = 60) =>
             new Promise((resolve) => setTimeout(resolve, ms));
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           const current = s.pages[s.currentPageId];
           current.title = "Block Events";
           current.icon = "📄";
@@ -8552,7 +9034,7 @@ const integrationTests = [
           };
           const imageEmptyClick = document.querySelectorAll(".image-empty")[0];
           const tinyGifBytes = Uint8Array.from(
-            atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"),
+            atob("R0lGODlhAQABAAAAACwAAAAAAQABAAA="),
             (ch) => ch.charCodeAt(0),
           );
           imageEmptyClick.click();
@@ -10760,35 +11242,33 @@ const integrationTests = [
               value: [file],
               configurable: true,
             });
-            const promise = fileInput.onchange();
-            let importSettled = false;
-            promise.then(
+            let settled = false,
+              failure = null;
+            const promise = fileInput.onchange().then(
               () => {
-                importSettled = true;
+                settled = true;
               },
-              () => {
-                importSettled = true;
+              (error) => {
+                settled = true;
+                failure = error;
               },
             );
-            const overlay = document.querySelector("#dialog-overlay");
-            const deadline = performance.now() + 30000;
-            while (
-              !importSettled &&
-              (!overlay || overlay.hidden) &&
-              performance.now() < deadline
-            )
+            const alerts = [];
+            const deadline = Date.now() + 10000;
+            while (!settled) {
+              const overlay = document.querySelector("#dialog-overlay");
+              const ok = document.querySelector("#dialog-box [data-ok]");
+              if (overlay && !overlay.hidden && ok) {
+                alerts.push(document.querySelector("#dialog-box").textContent);
+                ok.click();
+              }
+              if (Date.now() > deadline)
+                throw new Error(`Import did not settle: ${name}`);
               await delay(10);
-            if (!importSettled && (!overlay || overlay.hidden))
-              throw new Error(
-                "Markdown import did not settle or show a notice",
-              );
-            let alertText = "";
-            if (overlay && !overlay.hidden) {
-              alertText = document.querySelector("#dialog-box").textContent;
-              document.querySelector("#dialog-box [data-ok]").click();
             }
             await promise;
-            return alertText;
+            if (failure) throw failure;
+            return alerts.join("\n");
           };
           try {
             const s = api.createInitialState();
@@ -11327,7 +11807,7 @@ const integrationTests = [
           api.setState(s);
           api.renderAll();
           const acceptedUrl =
-            "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
           const block =
             api.getState().pages[api.getState().currentPageId].blocks[0];
           api.internals.openImagePicker(block);
@@ -11436,7 +11916,7 @@ const integrationTests = [
           };
           try {
             const tinyGifBytes = Uint8Array.from(
-              atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"),
+              atob("R0lGODlhAQABAAAAACwAAAAAAQABAAA="),
               (ch) => ch.charCodeAt(0),
             );
             api.internals.openImagePicker(blocks[0]);
@@ -11917,6 +12397,7 @@ const integrationTests = [
             new Promise((resolve) => setTimeout(resolve, ms));
 
           let s = api.createInitialState();
+          s.uiLanguage = "en";
           const root = s.pages[s.currentPageId];
           root.title = "Body Match";
           root.blocks = [api.blk("text", "rank-token body")];
@@ -11942,11 +12423,13 @@ const integrationTests = [
           document
             .querySelector("#search-overlay")
             .dispatchEvent(
-              new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+              new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
             );
+          document.querySelector("#search-overlay").click();
           await delay();
 
           s = api.createInitialState();
+          s.uiLanguage = "en";
           api.setState(s);
           api.renderAll();
           const clickShortcutRow = async (matcher, index = 0) => {
@@ -11968,14 +12451,16 @@ const integrationTests = [
           document
             .querySelector("#search-overlay")
             .dispatchEvent(
-              new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+              new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
             );
+          document.querySelector("#search-overlay").click();
           await delay();
           await clickShortcutRow(/^Undo/i);
           await clickShortcutRow(/^Redo/i, 0);
           await clickShortcutRow(/^Redo/i, 1);
 
           s = api.createInitialState();
+          s.uiLanguage = "en";
           const mergePage = s.pages[s.currentPageId];
           mergePage.blocks = [
             api.blk("text", "Hello "),
@@ -12005,6 +12490,7 @@ const integrationTests = [
             );
 
           s = api.createInitialState();
+          s.uiLanguage = "en";
           const clipPage = s.pages[s.currentPageId];
           clipPage.blocks = [
             api.blk("text", "Clip A"),
@@ -12527,6 +13013,7 @@ const integrationTests = [
           const delay = (ms = 30) =>
             new Promise((resolve) => setTimeout(resolve, ms));
           const s = api.createInitialState();
+          s.uiLanguage = "en";
           const current = s.pages[s.currentPageId];
           current.title = "Language Page";
           current.blocks = [api.blk("text", "Body")];
@@ -12568,7 +13055,7 @@ const integrationTests = [
         }),
       );
       assert.equal(result.uiLanguage, "ja");
-      assert.match(result.jaTitle, /テーマ|表示/);
+      assert.equal(result.jaTitle, "設定");
       assert.match(result.jaTrash, /ゴミ箱/);
       assert.ok(result.accentBeforeReset.length > 0);
       assert.deepEqual(result.themeCustomKeys, []);
@@ -12582,6 +13069,17 @@ const integrationTests = [
 
 async function runTestGroup(page, tests) {
   for (const test of tests) {
+    // 状態の検証のため、テストが意図的にモーダルを開いたままにする場合がある。
+    // 次の独立したケースへ進む前にそれらを閉じる。Escapeは背後のモーダルを
+    // 正しく保持するため、以前のように一括で閉じる動作には頼らない。
+    await evaluate(
+      page,
+      js(() => {
+        if (!window.__LeafNoteTest) return;
+        if (!dialogOverlay.hidden) hideDialog(null);
+        qsa(".overlay").forEach(closeOverlay);
+      }),
+    );
     await test.run(page);
     console.log(`ok - ${test.name}`);
   }
@@ -12590,9 +13088,7 @@ async function runTestGroup(page, tests) {
 async function reportCoverage(page) {
   const result = await page.send("Profiler.takePreciseCoverage");
   await page.send("Profiler.stopPreciseCoverage");
-  const entries = result.result.filter((entry) =>
-    entry.url.includes("LeafNote.html"),
-  );
+  const entries = result.result.filter((entry) => entry.url === appUrl);
   let total = 0;
   let used = 0;
   const uncovered = [];
@@ -12647,7 +13143,9 @@ async function reportCoverage(page) {
     }
   }
   const pct = total ? ((used / total) * 100).toFixed(1) : "0.0";
-  console.log(`coverage - LeafNote.html functions: ${used}/${total} (${pct}%)`);
+  console.log(
+    `coverage - ${APP_FILE_NAME} functions: ${used}/${total} (${pct}%)`,
+  );
   if (process.env.COVERAGE_DETAIL === "1") {
     uncovered
       .sort((a, b) => a.line - b.line || a.column - b.column)
@@ -12659,8 +13157,8 @@ async function reportCoverage(page) {
   }
 }
 
-// Storage tests use real tabs on fresh local origins so they cannot touch a
-// user's file:// document or inherit state from the editor fixture tests.
+// 保存テストは新しいローカルオリジンの実タブを使い、ユーザーのfile://文書への
+// アクセスや、エディター用テストデータからの状態の引き継ぎを防ぐ。
 async function runStorageReliabilityTests(browser) {
   const source = await readFile(appPath, "utf8");
   const fixtures = [];
@@ -12707,6 +13205,378 @@ async function runStorageReliabilityTests(browser) {
       }),
     );
   try {
+    const recoveryContext = await fixture();
+    const recoveryPage = await tab(recoveryContext);
+    assert.equal(await seed(recoveryPage), true);
+    const checkpoints = await evaluate(
+      recoveryPage,
+      js(async () => {
+        const api = window.__LeafNoteTest;
+        const readRecords = async () => {
+          const db = await openDB();
+          try {
+            const store = db
+              .transaction(DB_STORE, "readonly")
+              .objectStore(DB_STORE);
+            return await Promise.all(
+              ["app-state", DB_PREVIOUS_STATE_KEY].map(
+                (key) =>
+                  new Promise((resolve, reject) => {
+                    const req = store.get(key);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                  }),
+              ),
+            );
+          } finally {
+            db.close();
+          }
+        };
+        const setBody = (text) => {
+          api.getState().pages[api.getState().currentPageId].blocks[0].content =
+            text;
+          api.saveState();
+        };
+        const bodies = (rows) =>
+          rows.map((s) => s?.pages[s.currentPageId].blocks[0].content);
+        setBody("second committed");
+        const second = await api._doSave();
+        const afterSecond = bodies(await readRecords());
+        setBody("third committed");
+        const third = await api._doSave();
+        const afterThird = bodies(await readRecords());
+        await api._doSave({ force: true });
+        const afterRepeatedSave = bodies(await readRecords());
+        const beforeFailure = JSON.stringify(await readRecords());
+        const originalPut = IDBObjectStore.prototype.put;
+        const originalSet = Storage.prototype.setItem;
+        let failedSave, beforeUnload;
+        try {
+          IDBObjectStore.prototype.put = function (value, key) {
+            if (key === "app-state")
+              throw new DOMException(
+                "Injected full disk",
+                "QuotaExceededError",
+              );
+            return originalPut.call(this, value, key);
+          };
+          Storage.prototype.setItem = function (key, value) {
+            if (key === STATE_STORAGE_KEY)
+              throw new DOMException(
+                "Injected full disk",
+                "QuotaExceededError",
+              );
+            return originalSet.call(this, key, value);
+          };
+          setBody("unsaved but still in memory");
+          failedSave = await api._doSave();
+          beforeUnload = new Event("beforeunload", { cancelable: true });
+          window.dispatchEvent(beforeUnload);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        } finally {
+          IDBObjectStore.prototype.put = originalPut;
+          Storage.prototype.setItem = originalSet;
+        }
+        const unchanged = beforeFailure === JSON.stringify(await readRecords());
+        const unsavedBody =
+          api.getState().pages[api.getState().currentPageId].blocks[0].content;
+        clearTimeout(_saveTimer);
+        _saveTimer = null;
+        // テストデータだけを破損させる。主要な2つのコピーがどちらも読めなくても、
+        // 直前の保存状態から復旧できることを確認する。
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(
+          { pages: null, lastModifiedAt: Number.MAX_SAFE_INTEGER },
+          "app-state",
+        );
+        await new Promise((resolve, reject) => {
+          tx.oncomplete = resolve;
+          tx.onabort = tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+        localStorage.setItem(STATE_STORAGE_KEY, "{broken");
+        // 失敗時の検証は完了したため、テスト用のページ移動を許可する。
+        // 未保存の下書きによるbeforeunloadの標準確認画面は表示させない。
+        _lastPersistedStateJSON = JSON.stringify(api.getState());
+        return {
+          second,
+          third,
+          afterSecond,
+          afterThird,
+          afterRepeatedSave,
+          failedSave,
+          unchanged,
+          unsavedBody,
+          closePrevented: beforeUnload.defaultPrevented,
+        };
+      }),
+    );
+    assert.equal(checkpoints.second, true);
+    assert.equal(checkpoints.third, true);
+    assert.deepEqual(checkpoints.afterSecond, ["second committed", "original"]);
+    assert.deepEqual(checkpoints.afterThird, [
+      "third committed",
+      "second committed",
+    ]);
+    assert.deepEqual(checkpoints.afterRepeatedSave, checkpoints.afterThird);
+    assert.equal(checkpoints.failedSave, false);
+    assert.equal(checkpoints.unchanged, true);
+    assert.equal(checkpoints.unsavedBody, "unsaved but still in memory");
+    assert.equal(checkpoints.closePrevented, true);
+    console.log(
+      "ok - durable saves rotate one checkpoint and failed transactions preserve both records and unsaved edits",
+    );
+    // 修復した文書を開く前に、元の描画プロセスを閉じる。
+    await recoveryPage.send("Page.navigate", { url: "about:blank" });
+    const recoveredPage = await tab(recoveryContext);
+    const recovered = await evaluate(
+      recoveredPage,
+      js(() => {
+        const s = window.__LeafNoteTest.getState();
+        return {
+          body: s.pages[s.currentPageId].blocks[0].content,
+          repairVisible: !document.querySelector("#dialog-overlay").hidden,
+        };
+      }),
+    );
+    assert.equal(recovered.body, "second committed");
+    assert.equal(recovered.repairVisible, true);
+    console.log(
+      "ok - startup recovers the previous committed document when both primary storage copies are corrupt",
+    );
+
+    const invalidContext = await fixture();
+    const invalidPage = await tab(invalidContext);
+    const startupGuard = await evaluate(
+      invalidPage,
+      js(async () => {
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(
+          { pages: null, lastModifiedAt: 999 },
+          "app-state",
+        );
+        await new Promise((resolve) => {
+          tx.oncomplete = resolve;
+        });
+        db.close();
+        localStorage.setItem(STATE_STORAGE_KEY, "{recoverable-raw-fragment");
+        return true;
+      }),
+    );
+    assert.equal(startupGuard, true);
+    await invalidPage.send("Page.navigate", { url: "about:blank" });
+    const guardedPage = await tab(invalidContext);
+    const guarded = await evaluate(
+      guardedPage,
+      js(async () => {
+        const api = window.__LeafNoteTest;
+        const saved = await api._doSave({ force: true });
+        api.flushPendingSaveOnLifecycle();
+        const db = await openDB();
+        const read = db
+          .transaction(DB_STORE, "readonly")
+          .objectStore(DB_STORE)
+          .get("app-state");
+        const value = await new Promise((resolve) => {
+          read.onsuccess = () => resolve(read.result);
+        });
+        db.close();
+        return {
+          saved,
+          value,
+          raw: localStorage.getItem(STATE_STORAGE_KEY),
+          visible: !document.querySelector("#save-status").hidden,
+        };
+      }),
+    );
+    assert.equal(guarded.saved, false);
+    assert.deepEqual(guarded.value, { pages: null, lastModifiedAt: 999 });
+    assert.equal(guarded.raw, "{recoverable-raw-fragment");
+    assert.equal(guarded.visible, true);
+    console.log(
+      "ok - startup never overwrites unreadable storage with the initial empty document",
+    );
+
+    for (const hasStoredDocument of [true, false]) {
+      const embeddedContext = await fixture();
+      if (hasStoredDocument) {
+        const setup = await tab(embeddedContext);
+        assert.equal(await seed(setup), true);
+        await setup.send("Page.navigate", { url: "about:blank" });
+      }
+      embeddedContext.embedded = {
+        pages: [],
+        lastModifiedAt: Number.MAX_SAFE_INTEGER,
+      };
+      const opened = await tab(embeddedContext, "export.html");
+      const result = await evaluate(
+        opened,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const saved = await api._doSave({ force: true });
+          const s = api.getState();
+          return {
+            saved,
+            body: s.pages[s.currentPageId].blocks[0].content,
+            conflict: _storageConflictDetected,
+            raw: localStorage.getItem(STATE_STORAGE_KEY),
+            repaired: !document.querySelector("#dialog-overlay").hidden,
+          };
+        }),
+      );
+      assert.equal(result.repaired, true);
+      assert.equal(result.conflict, !hasStoredDocument);
+      assert.equal(result.saved, hasStoredDocument);
+      if (hasStoredDocument) assert.equal(result.body, "original");
+      else assert.equal(result.raw, null);
+      console.log(
+        `ok - invalid embedded pages ${hasStoredDocument ? "recover the usable browser document" : "cannot persist a replacement initial document"}`,
+      );
+    }
+
+    const structuralContext = await fixture();
+    const structuralSetup = await tab(structuralContext);
+    const structuralRaw = await evaluate(
+      structuralSetup,
+      js(async () => {
+        const raw = createInitialState();
+        raw.pages[raw.currentPageId].blocks = [
+          {
+            id: "large-table",
+            type: "table",
+            rows: 1,
+            cols: 1,
+            cells: [["kept", "original extra cell"]],
+          },
+        ];
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(raw, "app-state");
+        await new Promise((resolve, reject) => {
+          tx.oncomplete = resolve;
+          tx.onabort = () => reject(tx.error);
+        });
+        db.close();
+        const json = JSON.stringify(raw);
+        localStorage.setItem(STATE_STORAGE_KEY, json);
+        return json;
+      }),
+    );
+    await structuralSetup.send("Page.navigate", { url: "about:blank" });
+    const structuralPage = await tab(structuralContext);
+    const structuralResult = await evaluate(
+      structuralPage,
+      js(async () => {
+        await _doSave();
+        flushStateToLocalStorageSync();
+        const db = await openDB();
+        const req = db
+          .transaction(DB_STORE, "readonly")
+          .objectStore(DB_STORE)
+          .get("app-state");
+        const stored = await new Promise((resolve) => {
+          req.onsuccess = () => resolve(req.result);
+        });
+        db.close();
+        return {
+          protected: !!_startupLossyRepairSnapshot,
+          idb: JSON.stringify(stored),
+          local: localStorage.getItem(STATE_STORAGE_KEY),
+        };
+      }),
+    );
+    assert.equal(structuralResult.protected, true);
+    assert.equal(structuralResult.idb, structuralRaw);
+    assert.equal(structuralResult.local, structuralRaw);
+    console.log(
+      "ok - structural startup truncation preserves both original storage copies before user edits",
+    );
+
+    const quotaContext = await fixture();
+    // データベースを開く前に容量制限を設定する。制限を後で変えても、
+    // Chromiumが既存接続の割当量をキャッシュしている場合がある。
+    await guardedPage.send("Storage.overrideQuotaForOrigin", {
+      origin: quotaContext.url,
+      quotaSize: 128 * 1024,
+    });
+    const quotaPage = await tab(quotaContext);
+    assert.equal(await seed(quotaPage), true);
+    // put()/setItem()の模擬実装ではなく、Chromiumの実際の容量制限を使う。
+    // ランダムな8 MiBの添付はBase64化するとlocalStorageの上限も超える。
+    const quotaFailure = await evaluate(
+      quotaPage,
+      js(async () => {
+        const api = window.__LeafNoteTest;
+        const before = JSON.stringify(await api.loadStateAsync());
+        const localBefore = localStorage.getItem(STATE_STORAGE_KEY);
+        const bytes = new Uint8Array(8 * 1024 * 1024);
+        const chunks = [];
+        for (let i = 0; i < bytes.length; i += 32768) {
+          const chunk = bytes.subarray(i, i + 32768);
+          crypto.getRandomValues(chunk);
+          chunks.push(String.fromCharCode(...chunk));
+        }
+        const data =
+          "data:application/octet-stream;base64," + btoa(chunks.join(""));
+        const current = api.getState().pages[api.getState().currentPageId];
+        current.blocks.push(
+          api.blk("file", "", {
+            fileName: "quota-test.bin",
+            fileType: "application/octet-stream",
+            fileSize: bytes.length,
+            fileDataUrl: data,
+          }),
+        );
+        api.saveState();
+        clearTimeout(_saveTimer);
+        _saveTimer = null;
+        const saved = await api._doSave();
+        return {
+          saved,
+          previousPreserved:
+            before === JSON.stringify(await api.loadStateAsync()),
+          localPreserved:
+            localBefore === localStorage.getItem(STATE_STORAGE_KEY),
+          inMemoryPreserved: current.blocks.at(-1).fileDataUrl === data,
+          unsaved: _hasUnsavedState(),
+          errorVisible: !document.querySelector("#save-status").hidden,
+          status: document.querySelector("#save-status").textContent,
+        };
+      }),
+    );
+    assert.equal(quotaFailure.saved, false, JSON.stringify(quotaFailure));
+    assert.equal(quotaFailure.previousPreserved, true);
+    assert.equal(quotaFailure.localPreserved, true);
+    assert.equal(quotaFailure.inMemoryPreserved, true);
+    assert.equal(quotaFailure.unsaved, true);
+    assert.equal(quotaFailure.errorVisible, true);
+    await quotaPage.send("Storage.overrideQuotaForOrigin", {
+      origin: quotaContext.url,
+    });
+    assert.equal(
+      await evaluate(
+        quotaPage,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          for (let i = 0; i < 20; i++) {
+            if (await api._doSave())
+              return (
+                JSON.stringify(await api.loadStateAsync()) ===
+                JSON.stringify(api.getState())
+              );
+            await new Promise((resolve) => setTimeout(resolve, 25));
+          }
+          return false;
+        }),
+      ),
+      true,
+    );
+    console.log(
+      "ok - real browser quota exhaustion preserves the previous save and recovers after space is available",
+    );
+
     for (const storageMode of [
       "IndexedDB",
       "localStorage fallback",
@@ -12750,10 +13620,32 @@ async function runStorageReliabilityTests(browser) {
           ),
         ),
       );
+      let diagnostics;
+      if (results.filter(Boolean).length !== 1) {
+        diagnostics = await Promise.all(
+          [first, second].map((page) =>
+            evaluate(
+              page,
+              js(async () => ({
+                baseline: { ..._storageBaseline },
+                conflict: _storageConflictDetected,
+                localSignature: _storageSnapshotSignature(
+                  localStorage.getItem(STATE_STORAGE_KEY),
+                ),
+                body: getCurrentPage().blocks[0].content,
+                persisted: (await loadStateAsync())?.pages?.[
+                  state.currentPageId
+                ]?.blocks?.[0]?.content,
+                webLocks: !!navigator.locks?.request,
+              })),
+            ),
+          ),
+        );
+      }
       assert.equal(
         results.filter(Boolean).length,
         1,
-        JSON.stringify({ storageMode, results }),
+        JSON.stringify({ storageMode, results, diagnostics }),
       );
       const winnerIndex = results.indexOf(true);
       const winner = [first, second][winnerIndex];
@@ -12873,9 +13765,8 @@ async function runStorageReliabilityTests(browser) {
               failure,
               saved,
               closed,
-              name: JSON.parse(
-                localStorage.getItem("leafnote-markdown-native-v1"),
-              ).workspaceName,
+              name: JSON.parse(localStorage.getItem(STATE_STORAGE_KEY))
+                .workspaceName,
             });
           }
         } finally {
@@ -12950,6 +13841,143 @@ async function runStorageReliabilityTests(browser) {
     console.log(
       "ok - undo and redo stay dirty until saved and outrank exported snapshots after reopening",
     );
+
+    const attachmentContext = await fixture();
+    const attachmentPage = await tab(attachmentContext);
+    assert.equal(await seed(attachmentPage), true);
+    const attachmentHistory = await evaluate(
+      attachmentPage,
+      js(async () => {
+        const api = window.__LeafNoteTest;
+        const file = new File(
+          [new Uint8Array(3 * 1024 * 1024)],
+          "history.bin",
+          { type: "application/octet-stream" },
+        );
+        const added = await api.internals._insertFileBlockFromFile(
+          file,
+          api.getState().pages[api.getState().currentPageId].blocks[0],
+        );
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        const saved = await api._doSave({ force: true });
+        const before = JSON.stringify(api.getState());
+        const storedBefore = JSON.stringify(await api.loadStateAsync());
+        const stacks = JSON.stringify(_historyStackInfo());
+        const undone = undo();
+        const redone = redo();
+        // 保留中の履歴スナップショットを消費する前に拒否する場合も検証する。
+        _pendingSnapshot = before;
+        const pendingBlocked = undo() === false && _pendingSnapshot === before;
+        api.flushPendingSaveOnLifecycle();
+        await api._doSave();
+        return {
+          added,
+          saved,
+          undone,
+          redone,
+          pendingBlocked,
+          unchanged: before === JSON.stringify(api.getState()),
+          storedUnchanged:
+            storedBefore === JSON.stringify(await api.loadStateAsync()),
+          stacksUnchanged: stacks === JSON.stringify(_historyStackInfo()),
+          notified: document
+            .querySelector("#save-status")
+            .textContent.includes("HTML"),
+        };
+      }),
+    );
+    assert.equal(attachmentHistory.added, true);
+    assert.equal(attachmentHistory.saved, true);
+    assert.equal(attachmentHistory.undone, false);
+    assert.equal(attachmentHistory.redone, false);
+    assert.equal(attachmentHistory.pendingBlocked, true);
+    assert.equal(attachmentHistory.unchanged, true);
+    assert.equal(attachmentHistory.storedUnchanged, true);
+    assert.equal(attachmentHistory.stacksUnchanged, true);
+    assert.equal(attachmentHistory.notified, true);
+    console.log(
+      "ok - oversized attachment undo preserves content history and persisted data",
+    );
+
+    for (const largeSource of ["localStorage", "embedded"]) {
+      const largeContext = await fixture();
+      const setupPage = await tab(largeContext);
+      const largeState = await evaluate(
+        setupPage,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const small = api.createInitialState();
+          small.documentId = "large-startup";
+          small.lastModifiedAt = 1;
+          Object.values(small.pages).forEach((p) => {
+            p.updatedAt = 1;
+            p.createdAt = 1;
+          });
+          api.setState(small);
+          await api._doSave({ force: true });
+          return small;
+        }),
+      );
+      largeState.pages = {};
+      largeState.rootPages = ["p0"];
+      largeState.currentPageId = "p0";
+      for (let i = 0; i < 100000; i++)
+        largeState.pages["p" + i] = { updatedAt: i === 99999 ? 9000 : 1 };
+      if (largeSource === "localStorage") {
+        // 描画プロセス内でテストデータを生成する。保存領域を初期化するためだけに、
+        // 巨大なオブジェクトをCDP経由で転送しないようにする。
+        await evaluate(
+          setupPage,
+          js(() => {
+            const large = {
+              ...window.__LeafNoteTest.getState(),
+              pages: {},
+              rootPages: ["p0"],
+              currentPageId: "p0",
+            };
+            for (let i = 0; i < 100000; i++)
+              large.pages["p" + i] = { updatedAt: i === 99999 ? 9000 : 1 };
+            localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(large));
+            return true;
+          }),
+        );
+      } else {
+        largeContext.embedded = largeState;
+      }
+      const startupPage = await tab(
+        largeContext,
+        largeSource === "embedded" ? "export.html" : "LeafNote.html",
+      );
+      const startup = await evaluate(
+        startupPage,
+        js(async () => {
+          const api = window.__LeafNoteTest;
+          const before = localStorage.getItem(STATE_STORAGE_KEY);
+          const current = api.getState();
+          await api._doSave();
+          api.flushPendingSaveOnLifecycle();
+          return {
+            count: Object.keys(current.pages).length,
+            selectedLarge: !!current.pages.p0,
+            preserved: before === localStorage.getItem(STATE_STORAGE_KEY),
+            rendered: document.querySelectorAll("#blocks .block").length > 0,
+            warned: !document.querySelector("#dialog-overlay").hidden,
+            repairGuard: !!_startupLossyRepairSnapshot,
+          };
+        }),
+      );
+      assert.equal(startup.count, 1000, largeSource);
+      assert.equal(startup.selectedLarge, true, largeSource);
+      assert.equal(startup.preserved, true, largeSource);
+      assert.equal(startup.rendered, true, largeSource);
+      assert.equal(startup.warned, true, largeSource);
+      assert.equal(startup.repairGuard, true, largeSource);
+      console.log(
+        "ok - oversized " +
+          largeSource +
+          " startup selects repairs renders and preserves original storage",
+      );
+    }
 
     const differentContext = await fixture();
     const savedDocument = await tab(differentContext);
@@ -13039,7 +14067,6 @@ async function main() {
   const collectCoverage = mode === "coverage";
   const browser = await launchBrowser();
   let page = null;
-  let maskingerPage = null;
   let indexPage = null;
   try {
     page = await openPage(browser.port, { collectCoverage });
@@ -13053,26 +14080,26 @@ async function main() {
       mode === "all" ||
       mode === "leaf-note" ||
       mode === "coverage";
-    const runMaskingerUnit = runLeafNoteUnit && mode !== "leaf-note";
-    const runMaskingerIntegration =
-      runLeafNoteIntegration && mode !== "leaf-note";
-    const runIndexIntegration = runLeafNoteIntegration || mode === "index";
+    const runIndexIntegration = runLeafNoteIntegration;
 
     if (runLeafNoteUnit) await runTestGroup(page, unitTests);
     if (runLeafNoteIntegration) await runTestGroup(page, integrationTests);
+    if (runLeafNoteUnit || mode === "quality")
+      await runTestGroup(page, createQualityTests({ evaluate, js }));
     if (collectCoverage) await reportCoverage(page);
-    if (runLeafNoteIntegration) await runStorageReliabilityTests(browser);
-
-    if (runMaskingerUnit || runMaskingerIntegration) {
-      maskingerPage = await openPage(browser.port, {
-        url: maskingerUrl,
-        readyExpression:
-          '!!window.__MaskingerTest && !!document.querySelector("#source-input")',
+    if (runLeafNoteIntegration || mode === "storage")
+      await runStorageReliabilityTests(browser);
+    if (
+      runLeafNoteIntegration ||
+      mode === "storage" ||
+      mode === "storage-writer"
+    ) {
+      await runStorageWriterRegressions(browser, {
+        openPage,
+        evaluate,
+        js,
+        jsWithArgs,
       });
-      if (runMaskingerUnit)
-        await runTestGroup(maskingerPage, maskingerUnitTests);
-      if (runMaskingerIntegration)
-        await runTestGroup(maskingerPage, maskingerIntegrationTests);
     }
 
     if (runIndexIntegration) {
@@ -13084,7 +14111,6 @@ async function main() {
     }
   } finally {
     indexPage?.close();
-    maskingerPage?.close();
     page?.close();
     await stopBrowser(browser);
   }
@@ -13093,10 +14119,15 @@ async function main() {
 export {
   unitTests,
   integrationTests,
-  maskingerUnitTests,
-  maskingerIntegrationTests,
   indexIntegrationTests,
   runTestGroup,
+  launchBrowser,
+  stopBrowser,
+  openPage,
+  waitForReady,
+  evaluate,
+  js,
+  jsWithArgs,
 };
 
 if (

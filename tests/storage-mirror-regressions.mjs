@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import { APP_PATH } from "../scripts/app-path.mjs";
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { chromium, firefox, webkit } from "playwright";
 
-const [source = "LeafNote.html", engine = "chrome"] = process.argv.slice(2);
+const [source = APP_PATH, engine = "chrome"] = process.argv.slice(2);
 const html = await readFile(source, "utf8");
 const server = http.createServer((_request, response) => {
   response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });

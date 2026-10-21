@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { APP_PATH } from "../scripts/app-path.mjs";
 import { openTestPage } from "./test-page.mjs";
-const [source = "LeafNote.html", engine = "chrome"] = process.argv.slice(2);
+const [source = APP_PATH, engine = "chrome"] = process.argv.slice(2);
 const page = await openTestPage({
   source,
   engine,
